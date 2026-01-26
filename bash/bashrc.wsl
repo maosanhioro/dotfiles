@@ -1,0 +1,4 @@
+# WSL 固有（任意）
+# 例：Windows 側を開くコマンド
+alias open='explorer.exe .'
+

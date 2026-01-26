@@ -1,0 +1,121 @@
+# 共通 bash 設定（WSL/Ubuntu Desktop 共通）
+
+# 対話シェル以外は何もしない
+case $- in
+  *i*) ;;
+  *) return ;;
+esac
+
+############################################
+# 履歴
+############################################
+HISTCONTROL=ignoreboth
+shopt -s histappend
+shopt -s checkwinsize
+
+# ここは好みで増やしてOK（あなたの元設定に近い値）
+HISTSIZE=50000
+HISTFILESIZE=100000
+
+# プロンプト表示のたびに履歴を即時反映
+__prompt_cmd() { :; }
+PROMPT_COMMAND="__prompt_cmd; history -a"
+
+############################################
+# lesspipe
+############################################
+[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
+
+############################################
+# プロンプト（共通。WSL/Ubuntu でホスト名だけ変えるなら env別で上書き可）
+############################################
+case "$TERM" in
+  xterm-color|*-256color|xterm*|rxvt*) color_prompt=yes;;
+esac
+
+if [ "${color_prompt:-}" = yes ]; then
+  PS1='\[\033[32m\]\u@\[\033[36m\]\h\[\033[0m\]:\[\033[33m\]\W\[\033[0m\]$ '
+else
+  PS1='\u@\h:\w\$ '
+fi
+unset color_prompt
+
+############################################
+# QoL
+############################################
+alias ll='ls -alF'
+alias la='ls -A'
+alias l='ls -CF'
+alias ..='cd ..'
+alias ...='cd ../..'
+alias cls='clear'
+
+############################################
+# NVM（即時ロード：遅延なし）
+############################################
+export NVM_DIR="$HOME/.nvm"
+if [ -s "$NVM_DIR/nvm.sh" ]; then
+  . "$NVM_DIR/nvm.sh"
+fi
+if [ -s "$NVM_DIR/bash_completion" ]; then
+  . "$NVM_DIR/bash_completion"
+fi
+
+############################################
+# tmux：AI 作業セッション（共通ロジック）
+############################################
+ta() {
+  local S="ai-dev"
+  local W="ws"
+
+  command -v tmux >/dev/null 2>&1 || { echo "tmux not found"; return 1; }
+
+  _ta_build_4panes() {
+    local s="$1" w="$2"
+    tmux kill-window -t "${s}:1" 2>/dev/null || true
+    tmux has-session -t "${s}" 2>/dev/null || tmux new-session -d -s "${s}" -n "${w}"
+    tmux new-window -t "${s}" -n "${w}" 2>/dev/null || true
+
+    tmux select-window -t "${s}:1"
+    tmux select-pane   -t "${s}:1.1"
+
+    tmux split-window  -t "${s}:1.1" -h
+    tmux split-window  -t "${s}:1.2" -v
+    tmux split-window  -t "${s}:1.1" -v
+    tmux select-pane   -t "${s}:1.1"
+  }
+
+  if ! tmux has-session -t "${S}" 2>/dev/null; then
+    tmux new-session -d -s "${S}" -n "${W}"
+    _ta_build_4panes "${S}" "${W}"
+  else
+    if ! tmux list-windows -t "${S}" -F '#{window_index}' 2>/dev/null | grep -qx "1"; then
+      _ta_build_4panes "${S}" "${W}"
+    else
+      local pane_count
+      pane_count="$(tmux list-panes -t "${S}:1" 2>/dev/null | wc -l | tr -d ' ')"
+      if [ -z "${pane_count}" ] || [ "${pane_count}" -lt 4 ]; then
+        _ta_build_4panes "${S}" "${W}"
+      fi
+    fi
+  fi
+
+  if [ -n "${TMUX}" ]; then
+    tmux switch-client -t "${S}"
+  else
+    exec tmux attach-session -t "${S}"
+  fi
+}
+
+tl() { tmux ls; }
+tk() { tmux kill-session -t ai-dev 2>/dev/null || true; }
+treset() { tmux kill-server 2>/dev/null || true; }
+tmr() { tmux source-file ~/.tmux.conf 2>/dev/null || true; }
+
+############################################
+# SSH 接続時の自動 tmux 接続（共通）
+############################################
+if [ -n "$SSH_CONNECTION" ] && [ -z "$TMUX" ] && command -v tmux >/dev/null 2>&1; then
+  ta
+fi
+

@@ -1,0 +1,3 @@
+# Ubuntu Desktop 固有（任意）
+alias open='xdg-open .'
+
