@@ -3,7 +3,13 @@
 # 対話シェル以外は何もしない
 case $- in
   *i*) ;;
-  *) return ;;
+  *) [ -n "${TA_FORCE:-}" ] || return ;;
+esac
+
+# Local bin (AppImage, user installs)
+case ":$PATH:" in
+  *":$HOME/.local/bin:"*) ;;
+  *) export PATH="$HOME/.local/bin:$PATH" ;;
 esac
 
 ############################################
@@ -67,33 +73,161 @@ fi
 ta() {
   local S="ai-dev"
   local W="ws"
+  local TA_DEBUG="${TA_DEBUG:-}"
+  local TA_INTERNAL="${TA_INTERNAL:-}"
+  local TA_CWD="${TA_CWD:-$PWD}"
+  local TA_COLS TA_LINES
 
   command -v tmux >/dev/null 2>&1 || { echo "tmux not found"; return 1; }
+
+  _ta_dbg() {
+    [ -n "${TA_DEBUG}" ] && printf '[ta] %s\n' "$*" >&2
+  }
+
+  _ta_run() {
+    if [ -n "${TA_DEBUG}" ]; then
+      printf '[ta] $ %s\n' "$*" >&2
+    fi
+    "$@"
+  }
+
+  _ta_dims() {
+    if [ -n "${TMUX}" ] && command -v tmux >/dev/null 2>&1; then
+      TA_COLS="$(tmux display-message -p -t "${TMUX_PANE}" '#{client_width}' 2>/dev/null)"
+      TA_LINES="$(tmux display-message -p -t "${TMUX_PANE}" '#{client_height}' 2>/dev/null)"
+    else
+      TA_COLS="$(tput cols 2>/dev/null)"
+      TA_LINES="$(tput lines 2>/dev/null)"
+    fi
+    case "${TA_COLS}" in ''|*[!0-9]*) TA_COLS=120;; esac
+    case "${TA_LINES}" in ''|*[!0-9]*) TA_LINES=40;; esac
+    _ta_dbg "dims=${TA_COLS}x${TA_LINES}"
+  }
 
   _ta_build_layout() {
     local s="$1" w="$2"
     # Kill and create a fresh window for the layout
-    tmux kill-window -t "${s}:${w}" 2>/dev/null || true
-    tmux new-window -t "${s}" -n "${w}"
+    _ta_run tmux kill-window -t "${s}:${w}" 2>/dev/null || true
+    _ta_run tmux new-window -t "${s}" -n "${w}" -d -c "${TA_CWD}"
 
     local target="${s}:${w}"
+    local root_pane
+    _ta_dbg "$ tmux list-panes -t ${target} -F #{pane_id}"
+    root_pane="$(tmux list-panes -t "${target}" -F '#{pane_id}' | head -n 1)"
+    [ -n "${root_pane}" ] || { echo "ta: failed to create window"; return 1; }
+    _ta_dbg "root_pane=${root_pane}"
 
-    # Create 3 vertical columns (pane-base-index=1)
-    tmux split-window -h -p 67 -t "${target}"
-    tmux split-window -h -p 50 -t "${target}.2"
-    tmux select-layout -t "${target}" even-horizontal
+    # Create 3 columns using absolute sizes (compatible with older tmux).
+    local total_cols total_lines col right_w mid_w
+    total_cols="$(tmux display-message -p -t "${target}" '#{window_width}' 2>/dev/null)"
+    total_lines="$(tmux display-message -p -t "${target}" '#{window_height}' 2>/dev/null)"
+    case "${total_cols}" in ''|*[!0-9]*) total_cols="${TA_COLS}";; esac
+    case "${total_lines}" in ''|*[!0-9]*) total_lines="${TA_LINES}";; esac
+    col=$(( total_cols / 3 ))
+    right_w="${col}"
+    mid_w="${col}"
+    [ "${right_w}" -lt 1 ] && right_w=1
+    [ "${mid_w}" -lt 1 ] && mid_w=1
 
-    # Split each column horizontally (70/30)
-    tmux split-window -v -p 30 -t "${target}.1"
-    tmux split-window -v -p 30 -t "${target}.2"
-    tmux split-window -v -p 30 -t "${target}.3"
+    _ta_run tmux split-window -h -l "${right_w}" -t "${root_pane}"
+    # Split the left area to make the middle column
+    _ta_run tmux split-window -h -l "${mid_w}" -t "${root_pane}"
+
+    # Resolve panes left -> right by coordinates, then split each column.
+    local panes a b c
+    _ta_dbg "$ tmux list-panes -t ${target} -F '#{pane_id} #{pane_left}'"
+    panes="$(tmux list-panes -t "${target}" -F '#{pane_id} #{pane_left}' | sort -n -k2 | awk '{print $1}')"
+    a="$(printf '%s\n' "${panes}" | sed -n '1p')"
+    b="$(printf '%s\n' "${panes}" | sed -n '2p')"
+    c="$(printf '%s\n' "${panes}" | sed -n '3p')"
+    _ta_dbg "panes=${panes}"
+
+    # Split each column vertically: left/mid 80/20, right 50/50.
+    _ta_split_v_pct() {
+      local pane="$1" bottom_pct="$2"
+      local h bottom
+      h="$(tmux display-message -p -t "${pane}" '#{pane_height}' 2>/dev/null)"
+      case "${h}" in ''|*[!0-9]*) h="${total_lines}";; esac
+      bottom=$(( h * bottom_pct / 100 ))
+      [ "${bottom}" -lt 1 ] && bottom=1
+      [ "${bottom}" -ge "${h}" ] && bottom=$(( h / 2 ))
+      _ta_run tmux split-window -v -l "${bottom}" -t "${pane}"
+    }
+
+    [ -n "${a}" ] && _ta_split_v_pct "${a}" 20
+    [ -n "${b}" ] && _ta_split_v_pct "${b}" 20
+    [ -n "${c}" ] && _ta_split_v_pct "${c}" 50
+
+    # Enforce exact ratios per column (some tmux versions ignore -l precisely).
+    _ta_resize_column() {
+      local left_x="$1" bottom_pct="$2"
+      local rows total bottom top_pane bottom_pane cur delta
+      rows="$(tmux list-panes -t "${target}" -F '#{pane_id} #{pane_left} #{pane_top} #{pane_height}' \
+        | awk -v x="${left_x}" '$2==x {print $0}' | sort -n -k3)"
+      top_pane="$(printf '%s\n' "${rows}" | sed -n '1p' | awk '{print $1}')"
+      bottom_pane="$(printf '%s\n' "${rows}" | sed -n '2p' | awk '{print $1}')"
+      [ -n "${top_pane}" ] || return
+      [ -n "${bottom_pane}" ] || return
+      total="$(printf '%s\n' "${rows}" | awk '{sum+=$4} END {print sum}')"
+      case "${total}" in ''|*[!0-9]*) return;; esac
+      bottom=$(( total * bottom_pct / 100 ))
+      [ "${bottom}" -lt 1 ] && bottom=1
+      [ "${bottom}" -ge "${total}" ] && bottom=$(( total / 2 ))
+      cur="$(tmux display-message -p -t "${bottom_pane}" '#{pane_height}' 2>/dev/null)"
+      case "${cur}" in ''|*[!0-9]*) return;; esac
+      delta=$(( cur - bottom ))
+      if [ "${delta}" -gt 0 ]; then
+        _ta_run tmux resize-pane -U "${delta}" -t "${bottom_pane}"
+      elif [ "${delta}" -lt 0 ]; then
+        _ta_run tmux resize-pane -D "$(( -delta ))" -t "${bottom_pane}"
+      fi
+    }
+
+    # Left/mid columns are 80/20, right column is 50/50.
+    [ -n "${a}" ] && _ta_resize_column "$(tmux display-message -p -t "${a}" '#{pane_left}' 2>/dev/null)" 20
+    [ -n "${b}" ] && _ta_resize_column "$(tmux display-message -p -t "${b}" '#{pane_left}' 2>/dev/null)" 20
+    [ -n "${c}" ] && _ta_resize_column "$(tmux display-message -p -t "${c}" '#{pane_left}' 2>/dev/null)" 50
+
+    # Identify top/bottom panes by column and launch apps.
+    local rows lefts left1 left2 left3 A B C D E F
+    rows="$(tmux list-panes -t "${target}" -F '#{pane_id} #{pane_left} #{pane_top}')"
+    lefts="$(printf '%s\n' "${rows}" | awk '{print $2}' | sort -n | uniq)"
+    left1="$(printf '%s\n' "${lefts}" | sed -n '1p')"
+    left2="$(printf '%s\n' "${lefts}" | sed -n '2p')"
+    left3="$(printf '%s\n' "${lefts}" | sed -n '3p')"
+    A="$(printf '%s\n' "${rows}" | awk -v x="${left1}" '$2==x {print $0}' | sort -n -k3 | sed -n '1p' | awk '{print $1}')"
+    D="$(printf '%s\n' "${rows}" | awk -v x="${left1}" '$2==x {print $0}' | sort -n -k3 | sed -n '2p' | awk '{print $1}')"
+    B="$(printf '%s\n' "${rows}" | awk -v x="${left2}" '$2==x {print $0}' | sort -n -k3 | sed -n '1p' | awk '{print $1}')"
+    E="$(printf '%s\n' "${rows}" | awk -v x="${left2}" '$2==x {print $0}' | sort -n -k3 | sed -n '2p' | awk '{print $1}')"
+    C="$(printf '%s\n' "${rows}" | awk -v x="${left3}" '$2==x {print $0}' | sort -n -k3 | sed -n '1p' | awk '{print $1}')"
+    F="$(printf '%s\n' "${rows}" | awk -v x="${left3}" '$2==x {print $0}' | sort -n -k3 | sed -n '2p' | awk '{print $1}')"
+
+    _ta_send_cmd() {
+      local pane="$1" cmd="$2"
+      [ -n "${pane}" ] && [ -n "${cmd}" ] && _ta_run tmux send-keys -t "${pane}" "${cmd}" C-m
+    }
+    _ta_send_cmd "${A}" "codex"
+    _ta_send_cmd "${B}" "gemini"
+    _ta_send_cmd "${F}" "git --no-pager log -10 --oneline"
 
     # Select top-left pane
-    tmux select-pane -t "${target}.1"
+    [ -n "${a}" ] && _ta_run tmux select-pane -t "${a}"
   }
 
+  _ta_dims
+  if [ -z "${TMUX}" ] && [ -z "${TA_INTERNAL}" ]; then
+    if ! tmux has-session -t "${S}" 2>/dev/null; then
+      _ta_run tmux new-session -d -s "${S}" -n "main" -c "${TA_CWD}"
+    fi
+    local ta_cwd_q
+    ta_cwd_q="$(printf %q "${TA_CWD}")"
+    _ta_run tmux run-shell -t "${S}" "TA_CWD=${ta_cwd_q} bash -lc 'TA_FORCE=1; . ~/.bashrc; TA_INTERNAL=1 ta'"
+    _ta_run tmux attach-session -t "${S}"
+    return
+  fi
+
   if ! tmux has-session -t "${S}" 2>/dev/null; then
-    tmux new-session -d -s "${S}" -n "main" # Start with a main window
+    _ta_run tmux new-session -d -s "${S}" -n "main" -c "${TA_CWD}" # Start with a main window
     _ta_build_layout "${S}" "${W}"
   else
     # Check if window 'ws' exists. If not, create it.
@@ -110,12 +244,10 @@ ta() {
   fi
 
   # Select the target window before attaching/switching
-  tmux select-window -t "${S}:${W}"
+  _ta_run tmux select-window -t "${S}:${W}"
 
   if [ -n "${TMUX}" ]; then
-    tmux switch-client -t "${S}"
-  else
-    exec tmux attach-session -t "${S}"
+    _ta_run tmux switch-client -t "${S}"
   fi
 }
 
