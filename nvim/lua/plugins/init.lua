@@ -1,17 +1,18 @@
 return {
   {
-    "folke/tokyonight.nvim",
+    "navarasu/onedark.nvim",
     lazy = false,
     priority = 1000,
     config = function()
-      vim.cmd.colorscheme("tokyonight-night")
+      require("onedark").setup({ style = "dark" })
+      vim.cmd.colorscheme("onedark")
     end,
   },
   {
     "nvim-lualine/lualine.nvim",
     dependencies = { "nvim-tree/nvim-web-devicons" },
     config = function()
-      require("lualine").setup({ options = { theme = "tokyonight" } })
+      require("lualine").setup({ options = { theme = "onedark" } })
     end,
   },
   { "folke/which-key.nvim", config = true },
@@ -197,6 +198,9 @@ return {
   {
     "stevearc/conform.nvim",
     opts = {
+      format_on_save = function()
+        return { lsp_fallback = true }
+      end,
       formatters_by_ft = {
         python = { "isort", "black" },
         javascript = { "prettier" },
@@ -209,5 +213,26 @@ return {
         markdown = { "prettier" },
       },
     },
+  },
+
+  {
+    "stevearc/oil.nvim",
+    dependencies = { "nvim-tree/nvim-web-devicons" },
+    config = function()
+      require("oil").setup({
+        default_file_explorer = true,
+        view_options = { show_hidden = true },
+      })
+    end,
+  },
+
+  {
+    "folke/persistence.nvim",
+    event = "BufReadPre",
+    config = function()
+      require("persistence").setup({
+        options = { "buffers", "curdir", "tabpages", "winsize" },
+      })
+    end,
   },
 }

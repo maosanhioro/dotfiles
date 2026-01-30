@@ -208,6 +208,7 @@ ta() {
     }
     _ta_send_cmd "${A}" "codex"
     _ta_send_cmd "${B}" "gemini"
+    _ta_send_cmd "${C}" "nvim"
     _ta_send_cmd "${F}" "git --no-pager log -10 --oneline"
 
     # Select top-left pane

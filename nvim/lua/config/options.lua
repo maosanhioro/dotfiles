@@ -21,3 +21,16 @@ vim.opt.tabstop = 2
 vim.opt.softtabstop = 2
 vim.opt.completeopt = { "menu", "menuone", "noselect" }
 vim.opt.undofile = true
+
+-- Legacy vimrc niceties
+vim.opt.ambiwidth = "double"
+vim.opt.fileencodings = { "ucs-boms", "utf-8", "euc-jp", "cp932" }
+vim.opt.fileformats = { "unix", "dos", "mac" }
+vim.opt.backup = false
+vim.opt.swapfile = false
+vim.opt.autoread = true
+vim.opt.hidden = true
+vim.opt.showcmd = true
+vim.opt.wildmenu = true
+vim.opt.showmatch = true
+vim.opt.visualbell = true

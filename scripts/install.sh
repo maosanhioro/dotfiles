@@ -104,36 +104,16 @@ if ! is_wsl; then
 fi
 
 ############################################
-# ~/.bashrc エントリポイント生成
+# ~/.bashrc エントリポイント（リンク）
 ############################################
-echo "Writing ~/.bashrc"
-
-cat > "$HOME/.bashrc" <<'EOF'
-# dotfiles managed entrypoint
-
-. "$HOME/dotfiles/bash/bashrc.common"
-
-if grep -qi microsoft /proc/version 2>/dev/null; then
-  . "$HOME/dotfiles/bash/bashrc.wsl"
-else
-  . "$HOME/dotfiles/bash/bashrc.ubuntu"
-fi
-EOF
+echo "Linking ~/.bashrc"
+ln -sfn "$REPO_DIR/bash/bashrc.common" "$HOME/.bashrc"
 
 ############################################
-# ~/.tmux.conf エントリポイント生成
+# ~/.tmux.conf エントリポイント（リンク）
 ############################################
-echo "Writing ~/.tmux.conf"
-
-cat > "$HOME/.tmux.conf" <<'EOF'
-# dotfiles managed entrypoint
-
-source-file ~/dotfiles/tmux/tmux.common.conf
-
-if-shell 'grep -qi microsoft /proc/version 2>/dev/null' \
-  'source-file ~/dotfiles/tmux/tmux.wsl.conf' \
-  'source-file ~/dotfiles/tmux/tmux.ubuntu.conf'
-EOF
+echo "Linking ~/.tmux.conf"
+ln -sfn "$REPO_DIR/tmux/tmux.common.conf" "$HOME/.tmux.conf"
 
 ############################################
 # Neovim 設定の配置
