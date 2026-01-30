@@ -70,35 +70,47 @@ ta() {
 
   command -v tmux >/dev/null 2>&1 || { echo "tmux not found"; return 1; }
 
-  _ta_build_4panes() {
+  _ta_build_layout() {
     local s="$1" w="$2"
-    tmux kill-window -t "${s}:1" 2>/dev/null || true
-    tmux has-session -t "${s}" 2>/dev/null || tmux new-session -d -s "${s}" -n "${w}"
-    tmux new-window -t "${s}" -n "${w}" 2>/dev/null || true
+    # Kill and create a fresh window for the layout
+    tmux kill-window -t "${s}:${w}" 2>/dev/null || true
+    tmux new-window -t "${s}" -n "${w}"
 
-    tmux select-window -t "${s}:1"
-    tmux select-pane   -t "${s}:1.1"
+    local target="${s}:${w}"
 
-    tmux split-window  -t "${s}:1.1" -h
-    tmux split-window  -t "${s}:1.2" -v
-    tmux split-window  -t "${s}:1.1" -v
-    tmux select-pane   -t "${s}:1.1"
+    # Create 3 vertical columns (pane-base-index=1)
+    tmux split-window -h -p 67 -t "${target}"
+    tmux split-window -h -p 50 -t "${target}.2"
+    tmux select-layout -t "${target}" even-horizontal
+
+    # Split each column horizontally (70/30)
+    tmux split-window -v -p 30 -t "${target}.1"
+    tmux split-window -v -p 30 -t "${target}.2"
+    tmux split-window -v -p 30 -t "${target}.3"
+
+    # Select top-left pane
+    tmux select-pane -t "${target}.1"
   }
 
   if ! tmux has-session -t "${S}" 2>/dev/null; then
-    tmux new-session -d -s "${S}" -n "${W}"
-    _ta_build_4panes "${S}" "${W}"
+    tmux new-session -d -s "${S}" -n "main" # Start with a main window
+    _ta_build_layout "${S}" "${W}"
   else
-    if ! tmux list-windows -t "${S}" -F '#{window_index}' 2>/dev/null | grep -qx "1"; then
-      _ta_build_4panes "${S}" "${W}"
+    # Check if window 'ws' exists. If not, create it.
+    if ! tmux list-windows -t "${S}" -F '#{window_name}' 2>/dev/null | grep -qx "${W}"; then
+      _ta_build_layout "${S}" "${W}"
     else
+      # If it exists, check the pane count. Recreate if it's not our layout.
       local pane_count
-      pane_count="$(tmux list-panes -t "${S}:1" 2>/dev/null | wc -l | tr -d ' ')"
-      if [ -z "${pane_count}" ] || [ "${pane_count}" -lt 4 ]; then
-        _ta_build_4panes "${S}" "${W}"
+      pane_count="$(tmux list-panes -t "${S}:${W}" 2>/dev/null | wc -l | tr -d ' ')"
+      if [ -z "${pane_count}" ] || [ "${pane_count}" -ne 6 ]; then
+        _ta_build_layout "${S}" "${W}"
       fi
     fi
   fi
+
+  # Select the target window before attaching/switching
+  tmux select-window -t "${S}:${W}"
 
   if [ -n "${TMUX}" ]; then
     tmux switch-client -t "${S}"
@@ -118,4 +130,3 @@ tmr() { tmux source-file ~/.tmux.conf 2>/dev/null || true; }
 if [ -n "$SSH_CONNECTION" ] && [ -z "$TMUX" ] && command -v tmux >/dev/null 2>&1; then
   ta
 fi
-
