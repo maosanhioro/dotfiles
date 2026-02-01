@@ -142,7 +142,7 @@ ta() {
     c="$(printf '%s\n' "${panes}" | sed -n '3p')"
     _ta_dbg "panes=${panes}"
 
-    # Split each column vertically: left/mid 80/20, right 50/50.
+    # Split only the left column vertically (80/20). Middle/right stay single.
     _ta_split_v_pct() {
       local pane="$1" bottom_pct="$2"
       local h bottom
@@ -155,10 +155,8 @@ ta() {
     }
 
     [ -n "${a}" ] && _ta_split_v_pct "${a}" 20
-    [ -n "${b}" ] && _ta_split_v_pct "${b}" 20
-    [ -n "${c}" ] && _ta_split_v_pct "${c}" 50
 
-    # Enforce exact ratios per column (some tmux versions ignore -l precisely).
+    # Enforce exact ratio for the left column (some tmux versions ignore -l precisely).
     _ta_resize_column() {
       local left_x="$1" bottom_pct="$2"
       local rows total bottom top_pane bottom_pane cur delta
@@ -183,13 +181,11 @@ ta() {
       fi
     }
 
-    # Left/mid columns are 80/20, right column is 50/50.
+    # Left column is 80/20.
     [ -n "${a}" ] && _ta_resize_column "$(tmux display-message -p -t "${a}" '#{pane_left}' 2>/dev/null)" 20
-    [ -n "${b}" ] && _ta_resize_column "$(tmux display-message -p -t "${b}" '#{pane_left}' 2>/dev/null)" 20
-    [ -n "${c}" ] && _ta_resize_column "$(tmux display-message -p -t "${c}" '#{pane_left}' 2>/dev/null)" 50
 
-    # Identify top/bottom panes by column and launch apps.
-    local rows lefts left1 left2 left3 A B C D E F
+    # Identify panes by column and launch apps.
+    local rows lefts left1 left2 left3 A B C D
     rows="$(tmux list-panes -t "${target}" -F '#{pane_id} #{pane_left} #{pane_top}')"
     lefts="$(printf '%s\n' "${rows}" | awk '{print $2}' | sort -n | uniq)"
     left1="$(printf '%s\n' "${lefts}" | sed -n '1p')"
@@ -198,18 +194,15 @@ ta() {
     A="$(printf '%s\n' "${rows}" | awk -v x="${left1}" '$2==x {print $0}' | sort -n -k3 | sed -n '1p' | awk '{print $1}')"
     D="$(printf '%s\n' "${rows}" | awk -v x="${left1}" '$2==x {print $0}' | sort -n -k3 | sed -n '2p' | awk '{print $1}')"
     B="$(printf '%s\n' "${rows}" | awk -v x="${left2}" '$2==x {print $0}' | sort -n -k3 | sed -n '1p' | awk '{print $1}')"
-    E="$(printf '%s\n' "${rows}" | awk -v x="${left2}" '$2==x {print $0}' | sort -n -k3 | sed -n '2p' | awk '{print $1}')"
     C="$(printf '%s\n' "${rows}" | awk -v x="${left3}" '$2==x {print $0}' | sort -n -k3 | sed -n '1p' | awk '{print $1}')"
-    F="$(printf '%s\n' "${rows}" | awk -v x="${left3}" '$2==x {print $0}' | sort -n -k3 | sed -n '2p' | awk '{print $1}')"
 
     _ta_send_cmd() {
       local pane="$1" cmd="$2"
       [ -n "${pane}" ] && [ -n "${cmd}" ] && _ta_run tmux send-keys -t "${pane}" "${cmd}" C-m
     }
-    _ta_send_cmd "${A}" "codex"
-    _ta_send_cmd "${B}" "gemini"
-    _ta_send_cmd "${C}" "nvim"
-    _ta_send_cmd "${F}" "git --no-pager log -10 --oneline"
+    _ta_send_cmd "${A}" "nvim"
+    _ta_send_cmd "${B}" "claude"
+    _ta_send_cmd "${C}" "codex"
 
     # Select top-left pane
     [ -n "${a}" ] && _ta_run tmux select-pane -t "${a}"
@@ -238,7 +231,7 @@ ta() {
       # If it exists, check the pane count. Recreate if it's not our layout.
       local pane_count
       pane_count="$(tmux list-panes -t "${S}:${W}" 2>/dev/null | wc -l | tr -d ' ')"
-      if [ -z "${pane_count}" ] || [ "${pane_count}" -ne 6 ]; then
+      if [ -z "${pane_count}" ] || [ "${pane_count}" -ne 4 ]; then
         _ta_build_layout "${S}" "${W}"
       fi
     fi
