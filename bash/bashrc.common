@@ -200,9 +200,17 @@ ta() {
       local pane="$1" cmd="$2"
       [ -n "${pane}" ] && [ -n "${cmd}" ] && _ta_run tmux send-keys -t "${pane}" "${cmd}" C-m
     }
+    _ta_set_title() {
+      local pane="$1" title="$2"
+      [ -n "${pane}" ] && [ -n "${title}" ] && _ta_run tmux select-pane -t "${pane}" -T "${title}"
+    }
     _ta_send_cmd "${A}" "nvim"
     _ta_send_cmd "${B}" "claude"
     _ta_send_cmd "${C}" "codex"
+    _ta_set_title "${A}" "nvim"
+    _ta_set_title "${B}" "claude"
+    _ta_set_title "${C}" "codex"
+    _ta_set_title "${D}" "shell"
 
     # Select top-left pane
     [ -n "${a}" ] && _ta_run tmux select-pane -t "${a}"
