@@ -1,4 +1,4 @@
-# AI-Assisted Workstation Dotfiles (Level 2)
+# AI-Assisted Workstation Dotfiles
 
 AI アシスト開発と日常開発を高速化する WSL/Ubuntu 向け dotfiles。  
 tmux の AI アシスト作業レイアウト、Neovim の LSP/formatter、bash の生産性強化を最初から整備しています。
