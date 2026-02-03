@@ -16,7 +16,27 @@ return {
     end,
   },
   { "folke/which-key.nvim", config = true },
-  { "lewis6991/gitsigns.nvim", config = true },
+  {
+    "lewis6991/gitsigns.nvim",
+    config = function()
+      require("gitsigns").setup({
+        on_attach = function(bufnr)
+          local map = function(mode, lhs, rhs, desc)
+            vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, desc = desc })
+          end
+          map("n", "]h", require("gitsigns").next_hunk, "Next hunk")
+          map("n", "[h", require("gitsigns").prev_hunk, "Prev hunk")
+          map("n", "<leader>hs", require("gitsigns").stage_hunk, "Stage hunk")
+          map("n", "<leader>hr", require("gitsigns").reset_hunk, "Reset hunk")
+          map("n", "<leader>hS", require("gitsigns").stage_buffer, "Stage buffer")
+          map("n", "<leader>hu", require("gitsigns").undo_stage_hunk, "Undo stage hunk")
+          map("n", "<leader>hR", require("gitsigns").reset_buffer, "Reset buffer")
+          map("n", "<leader>hp", require("gitsigns").preview_hunk, "Preview hunk")
+          map("n", "<leader>hb", require("gitsigns").blame_line, "Blame line")
+        end,
+      })
+    end,
+  },
   { "numToStr/Comment.nvim", config = true },
   { "windwp/nvim-autopairs", config = true },
   { "lukas-reineke/indent-blankline.nvim", main = "ibl", opts = {} },
@@ -54,8 +74,10 @@ return {
           },
         },
       })
+      pcall(telescope.load_extension, "ui-select")
     end,
   },
+  { "nvim-telescope/telescope-ui-select.nvim" },
 
   {
     "nvim-treesitter/nvim-treesitter",
@@ -234,5 +256,11 @@ return {
         options = { "buffers", "curdir", "tabpages", "winsize" },
       })
     end,
+  },
+
+  {
+    "folke/trouble.nvim",
+    dependencies = { "nvim-tree/nvim-web-devicons" },
+    opts = {},
   },
 }

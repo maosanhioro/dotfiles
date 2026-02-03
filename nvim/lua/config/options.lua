@@ -1,4 +1,4 @@
--- Core options
+-- 基本オプション
 vim.opt.number = true
 vim.opt.relativenumber = true
 vim.opt.cursorline = true
@@ -22,7 +22,7 @@ vim.opt.softtabstop = 2
 vim.opt.completeopt = { "menu", "menuone", "noselect" }
 vim.opt.undofile = true
 
--- Legacy vimrc niceties
+-- 旧 vimrc の互換設定
 vim.opt.ambiwidth = "double"
 vim.opt.fileencodings = { "ucs-boms", "utf-8", "euc-jp", "cp932" }
 vim.opt.fileformats = { "unix", "dos", "mac" }

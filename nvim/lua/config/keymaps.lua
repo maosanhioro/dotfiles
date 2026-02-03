@@ -1,4 +1,4 @@
--- Keymaps
+-- キーマップ
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
 
@@ -18,7 +18,21 @@ map("n", "<leader>qs", "<cmd>lua require('persistence').load()<cr>", { desc = "S
 map("n", "<leader>ql", "<cmd>lua require('persistence').load({ last = true })<cr>", { desc = "Session restore (last)" })
 map("n", "<leader>qd", "<cmd>lua require('persistence').stop()<cr>", { desc = "Session stop" })
 
--- Legacy vimrc mappings
+map("n", "<leader>e", vim.diagnostic.open_float, { desc = "Line diagnostics" })
+map("n", "[d", vim.diagnostic.goto_prev, { desc = "Prev diagnostic" })
+map("n", "]d", vim.diagnostic.goto_next, { desc = "Next diagnostic" })
+
+local ok_trouble, trouble = pcall(require, "trouble")
+if ok_trouble then
+  map("n", "<leader>xx", function() trouble.toggle() end, { desc = "Trouble" })
+  map("n", "<leader>xw", function() trouble.toggle("workspace_diagnostics") end, { desc = "Trouble workspace diagnostics" })
+  map("n", "<leader>xd", function() trouble.toggle("document_diagnostics") end, { desc = "Trouble document diagnostics" })
+  map("n", "<leader>xl", function() trouble.toggle("loclist") end, { desc = "Trouble loclist" })
+  map("n", "<leader>xq", function() trouble.toggle("quickfix") end, { desc = "Trouble quickfix" })
+  map("n", "gR", function() trouble.toggle("lsp_references") end, { desc = "Trouble references" })
+end
+
+-- 旧 vimrc のマッピング
 map("n", "<Esc><Esc>", "<cmd>nohlsearch<cr>", { desc = "No highlight" })
 map("i", "jj", "<Esc>", { silent = true })
 map("i", "kk", "<Esc>", { silent = true })
