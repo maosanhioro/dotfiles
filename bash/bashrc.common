@@ -137,10 +137,10 @@ if [ -s "$NVM_DIR/bash_completion" ]; then
 fi
 
 ############################################
-# tmux：AI 作業セッション（共通ロジック）
+# tmux：AI アシスト作業セッション（共通ロジック）
 ############################################
 ta() {
-  local S="ai-dev"
+  local S="ai-assist"
   local W="ws"
   local TA_DEBUG="${TA_DEBUG:-}"
   local TA_INTERNAL="${TA_INTERNAL:-}"
@@ -323,7 +323,7 @@ ta() {
 }
 
 tl() { tmux ls; }
-tk() { tmux kill-session -t ai-dev 2>/dev/null || true; }
+tk() { tmux kill-session -t ai-assist 2>/dev/null || true; }
 treset() { tmux kill-server 2>/dev/null || true; }
 tmr() { tmux source-file ~/.tmux.conf 2>/dev/null || true; }
 

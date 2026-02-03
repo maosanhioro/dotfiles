@@ -1,7 +1,7 @@
-# AI Workstation Dotfiles (Level 2)
+# AI-Assisted Workstation Dotfiles (Level 2)
 
-AI 開発と日常開発を高速化する WSL/Ubuntu 向け dotfiles。  
-tmux の AI 作業レイアウト、Neovim の LSP/formatter、bash の生産性強化を最初から整備しています。
+AI アシスト開発と日常開発を高速化する WSL/Ubuntu 向け dotfiles。  
+tmux の AI アシスト作業レイアウト、Neovim の LSP/formatter、bash の生産性強化を最初から整備しています。
 
 ## 対象環境
 - Windows 11 + WSL2 (Ubuntu)
@@ -10,7 +10,7 @@ tmux の AI 作業レイアウト、Neovim の LSP/formatter、bash の生産性
 - Gemini CLI / Codex CLI など
 
 ## 特徴
-- `ta` で AI 作業に最適化された tmux レイアウトを自動生成
+- `ta` で AI アシスト作業に最適化された tmux レイアウトを自動生成
 - Neovim: lazy.nvim + LSP + formatter + treesitter
 - WSL / Ubuntu Desktop の環境差を自動吸収（clipboard / TERM）
 - インストールスクリプトで最小依存を自動セットアップ
@@ -32,9 +32,9 @@ ta
 - `./scripts/install.sh --no-sudo` sudo を使わない（特殊環境向け）
 
 ## 使い方（コマンド）
-- `ta`: AI 作業用 tmux レイアウト起動
+- `ta`: AI アシスト作業用 tmux レイアウト起動
 - `tl`: tmux セッション一覧
-- `tk`: ai-dev セッション終了
+- `tk`: ai-assist セッション終了
 - `tmr`: tmux 設定再読込
 - `./scripts/doctor.sh`: 依存やリンクの簡易診断
 
@@ -48,7 +48,7 @@ ta
 ```
 
 ## tmux の挙動
-- セッション名: `ai-dev`
+- セッション名: `ai-assist`
 - ウィンドウ名: `ws`
 - `ta` は tmux 未起動時にセッションを作成してアタッチ
 - `ta` は既存セッションにウィンドウがなければ新規作成
@@ -167,4 +167,4 @@ ta
 ## Philosophy
 - 自動化できることは最初から自動化する
 - OS 差は設定側で吸収する
-- AI 作業の「開始コスト」を最小化する
+- AI アシスト作業の「開始コスト」を最小化する
