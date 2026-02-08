@@ -186,32 +186,36 @@ ta() {
     [ -n "${root_pane}" ] || { echo "ta: failed to create window"; return 1; }
     _ta_dbg "root_pane=${root_pane}"
 
-    # Create 3 columns using absolute sizes (compatible with older tmux).
-    local total_cols total_lines col right_w mid_w
+    # Create 4 columns using absolute sizes (compatible with older tmux).
+    local total_cols total_lines col right_w mid_w left_w
     total_cols="$(tmux display-message -p -t "${target}" '#{window_width}' 2>/dev/null)"
     total_lines="$(tmux display-message -p -t "${target}" '#{window_height}' 2>/dev/null)"
     case "${total_cols}" in ''|*[!0-9]*) total_cols="${TA_COLS}";; esac
     case "${total_lines}" in ''|*[!0-9]*) total_lines="${TA_LINES}";; esac
-    col=$(( total_cols / 3 ))
+    col=$(( total_cols / 4 ))
     right_w="${col}"
     mid_w="${col}"
+    left_w="${col}"
     [ "${right_w}" -lt 1 ] && right_w=1
     [ "${mid_w}" -lt 1 ] && mid_w=1
+    [ "${left_w}" -lt 1 ] && left_w=1
 
+    # Split into 4 columns (rightmost first, then middle-right, then middle-left).
     _ta_run tmux split-window -h -l "${right_w}" -t "${root_pane}"
-    # Split the left area to make the middle column
     _ta_run tmux split-window -h -l "${mid_w}" -t "${root_pane}"
+    _ta_run tmux split-window -h -l "${left_w}" -t "${root_pane}"
 
     # Resolve panes left -> right by coordinates, then split each column.
-    local panes a b c
+    local panes a b c d
     _ta_dbg "$ tmux list-panes -t ${target} -F '#{pane_id} #{pane_left}'"
     panes="$(tmux list-panes -t "${target}" -F '#{pane_id} #{pane_left}' | sort -n -k2 | awk '{print $1}')"
     a="$(printf '%s\n' "${panes}" | sed -n '1p')"
     b="$(printf '%s\n' "${panes}" | sed -n '2p')"
     c="$(printf '%s\n' "${panes}" | sed -n '3p')"
+    d="$(printf '%s\n' "${panes}" | sed -n '4p')"
     _ta_dbg "panes=${panes}"
 
-    # Split only the left column vertically (80/20). Middle/right stay single.
+    # Split only the left column vertically (50/50). Others stay single.
     _ta_split_v_pct() {
       local pane="$1" bottom_pct="$2"
       local h bottom
@@ -223,7 +227,7 @@ ta() {
       _ta_run tmux split-window -v -l "${bottom}" -t "${pane}"
     }
 
-    [ -n "${a}" ] && _ta_split_v_pct "${a}" 20
+    [ -n "${a}" ] && _ta_split_v_pct "${a}" 50
 
     # Enforce exact ratio for the left column (some tmux versions ignore -l precisely).
     _ta_resize_column() {
@@ -250,20 +254,22 @@ ta() {
       fi
     }
 
-    # Left column is 80/20.
-    [ -n "${a}" ] && _ta_resize_column "$(tmux display-message -p -t "${a}" '#{pane_left}' 2>/dev/null)" 20
+    # Left column is 50/50.
+    [ -n "${a}" ] && _ta_resize_column "$(tmux display-message -p -t "${a}" '#{pane_left}' 2>/dev/null)" 50
 
     # Identify panes by column and launch apps.
-    local rows lefts left1 left2 left3 A B C D
+    local rows lefts left1 left2 left3 left4 A A2 B C D
     rows="$(tmux list-panes -t "${target}" -F '#{pane_id} #{pane_left} #{pane_top}')"
     lefts="$(printf '%s\n' "${rows}" | awk '{print $2}' | sort -n | uniq)"
     left1="$(printf '%s\n' "${lefts}" | sed -n '1p')"
     left2="$(printf '%s\n' "${lefts}" | sed -n '2p')"
     left3="$(printf '%s\n' "${lefts}" | sed -n '3p')"
+    left4="$(printf '%s\n' "${lefts}" | sed -n '4p')"
     A="$(printf '%s\n' "${rows}" | awk -v x="${left1}" '$2==x {print $0}' | sort -n -k3 | sed -n '1p' | awk '{print $1}')"
-    D="$(printf '%s\n' "${rows}" | awk -v x="${left1}" '$2==x {print $0}' | sort -n -k3 | sed -n '2p' | awk '{print $1}')"
+    A2="$(printf '%s\n' "${rows}" | awk -v x="${left1}" '$2==x {print $0}' | sort -n -k3 | sed -n '2p' | awk '{print $1}')"
     B="$(printf '%s\n' "${rows}" | awk -v x="${left2}" '$2==x {print $0}' | sort -n -k3 | sed -n '1p' | awk '{print $1}')"
     C="$(printf '%s\n' "${rows}" | awk -v x="${left3}" '$2==x {print $0}' | sort -n -k3 | sed -n '1p' | awk '{print $1}')"
+    D="$(printf '%s\n' "${rows}" | awk -v x="${left4}" '$2==x {print $0}' | sort -n -k3 | sed -n '1p' | awk '{print $1}')"
 
     _ta_send_cmd() {
       local pane="$1" cmd="$2"
@@ -273,13 +279,15 @@ ta() {
       local pane="$1" title="$2"
       [ -n "${pane}" ] && [ -n "${title}" ] && _ta_run tmux select-pane -t "${pane}" -T "${title}"
     }
-    _ta_send_cmd "${A}" "nvim"
-    _ta_send_cmd "${B}" "claude"
-    _ta_send_cmd "${C}" "codex"
-    _ta_set_title "${A}" "nvim"
-    _ta_set_title "${B}" "claude"
-    _ta_set_title "${C}" "codex"
-    _ta_set_title "${D}" "shell"
+    _ta_send_cmd "${A2}" "nvim"
+    _ta_send_cmd "${B}" "codex"
+    _ta_send_cmd "${C}" "claude"
+    _ta_send_cmd "${D}" "gemini"
+    _ta_set_title "${A}" "shell"
+    _ta_set_title "${A2}" "nvim"
+    _ta_set_title "${B}" "codex"
+    _ta_set_title "${C}" "claude"
+    _ta_set_title "${D}" "gemini"
 
     # Select top-left pane
     [ -n "${a}" ] && _ta_run tmux select-pane -t "${a}"
