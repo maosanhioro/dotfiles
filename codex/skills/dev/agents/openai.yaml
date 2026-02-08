@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dev"
+  short_description: "企画・仕様・設計を一貫性とセキュリティ重視で整える"
+  default_prompt: "個人開発のアプリ/サービス向けに、企画書・仕様書・設計書を整合性とセキュリティ重視で作成・更新する。"

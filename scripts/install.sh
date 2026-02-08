@@ -195,6 +195,13 @@ run mkdir -p "$HOME/.config"
 run ln -sfn "$REPO_DIR/nvim" "$HOME/.config/nvim"
 
 ############################################
+# Codex CLI Skills（汎用）
+############################################
+echo "Codex CLI Skills（汎用）をリンク中"
+run mkdir -p "$HOME/.agents/skills"
+run ln -sfn "$REPO_DIR/codex/skills/dev" "$HOME/.agents/skills/dev"
+
+############################################
 # 完了
 ############################################
 echo

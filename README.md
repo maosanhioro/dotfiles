@@ -15,6 +15,7 @@ tmux の AI アシスト作業レイアウト、Neovim の LSP/formatter、bash 
 - WSL / Ubuntu Desktop の環境差を自動吸収（clipboard / TERM）
 - インストールスクリプトで最小依存を自動セットアップ
 - 依存やリンクの簡易診断スクリプトを同梱
+- Codex スキルのテンプレを同梱し、プロジェクト配布を支援
 
 ## セットアップ
 ```bash
@@ -37,6 +38,18 @@ ta
 - `tk`: ai-assist セッション終了
 - `tmr`: tmux 設定再読込
 - `./scripts/doctor.sh`: 依存やリンクの簡易診断
+- `./scripts/codex-skill-init.sh`: Codex スキルテンプレの配置
+
+## Codex スキルテンプレ
+- `codex/skills-templates/project/SKILL.md`: プロジェクト共通テンプレ
+- `codex/skills-templates/subproject/SKILL.md`: サブプロジェクト固有テンプレ
+- `./scripts/install.sh` は `codex/skills/dev` を `~/.agents/skills/dev` にリンク
+
+### テンプレ配置
+```bash
+./scripts/codex-skill-init.sh --project --dest /path/to/repo
+./scripts/codex-skill-init.sh --subproject --dest ./apps/foo --output SKILL.md
+```
 
 ## tmux レイアウト（ta）
 ```
