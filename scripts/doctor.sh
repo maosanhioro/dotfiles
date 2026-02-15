@@ -41,6 +41,7 @@ check_cmd claude
 check_cmd codex
 
 bold "リンク"
+check_link "${HOME}/.gitconfig"
 check_link "${HOME}/.bashrc"
 check_link "${HOME}/.tmux.conf"
 check_link "${HOME}/.config/nvim"

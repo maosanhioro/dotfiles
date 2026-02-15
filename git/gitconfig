@@ -1,0 +1,27 @@
+# dotfiles 管理の共通 Git 設定
+# マシン固有設定（user.name, user.email 等）は ~/.gitconfig.local に記載
+[include]
+  path = ~/.gitconfig.local
+
+[init]
+  defaultBranch = main
+
+[fetch]
+  prune = true
+
+[diff]
+  algorithm = histogram
+  colorMoved = default
+
+[merge]
+  conflictstyle = zdiff3
+
+[rerere]
+  enabled = true
+
+[alias]
+  sw = switch
+  swc = switch -c
+  unstage = reset HEAD --
+  last = log -1 HEAD
+  wip = commit -am "wip"

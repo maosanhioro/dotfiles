@@ -176,6 +176,25 @@ if ! is_wsl; then
 fi
 
 ############################################
+# ~/.gitconfig（リンク + ローカル設定）
+############################################
+echo "~/.gitconfig をリンク中"
+if [ -f "$HOME/.gitconfig" ] && [ ! -L "$HOME/.gitconfig" ] && [ ! -f "$HOME/.gitconfig.local" ]; then
+  echo "既存の ~/.gitconfig を ~/.gitconfig.local に退避"
+  run mv "$HOME/.gitconfig" "$HOME/.gitconfig.local"
+fi
+run ln -sfn "$REPO_DIR/git/gitconfig" "$HOME/.gitconfig"
+if [ ! -f "$HOME/.gitconfig.local" ]; then
+  echo "~/.gitconfig.local を作成中（user.name / user.email を設定してください）"
+  run tee "$HOME/.gitconfig.local" >/dev/null <<'LOCALCONF'
+# マシン固有の Git 設定
+[user]
+  name =
+  email =
+LOCALCONF
+fi
+
+############################################
 # ~/.bashrc エントリポイント（リンク）
 ############################################
 echo "~/.bashrc をリンク中"
