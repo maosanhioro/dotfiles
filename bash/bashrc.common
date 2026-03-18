@@ -412,16 +412,16 @@ ta() {
     root_pane="$(tmux list-panes -t "${target}" -F '#{pane_id}' | head -n 1)"
     [ -n "${root_pane}" ] || { echo "ta: failed to create window"; return 1; }
 
-    _ta_split_v_pct "${root_pane}" 38 "${TA_LINES}"
+    _ta_split_v_pct "${root_pane}" 70 "${TA_LINES}"
 
     rows="$(tmux list-panes -t "${target}" -F '#{pane_id} #{pane_top}' | sort -n -k2)"
     A="$(printf '%s\n' "${rows}" | sed -n '1p' | awk '{print $1}')"
     B="$(printf '%s\n' "${rows}" | sed -n '2p' | awk '{print $1}')"
 
-    _ta_send_cmd "${A}" "nvim"
-    _ta_set_title "${A}" "nvim"
-    _ta_set_title "${B}" "shell"
-    [ -n "${A}" ] && _ta_run tmux select-pane -t "${A}"
+    _ta_set_title "${A}" "shell"
+    _ta_send_cmd "${B}" "copilot"
+    _ta_set_title "${B}" "copilot"
+    [ -n "${B}" ] && _ta_run tmux select-pane -t "${B}"
     _ta_mark_layout "${target}" "compact"
 
     _ta_ensure_tool_window "${s}" "codex" "codex"
