@@ -147,7 +147,9 @@ ta() {
   local TA_CWD="${TA_CWD:-$PWD}"
   local TA_COLS TA_LINES
   local requested_layout="${TA_LAYOUT:-}"
+  local requested_agent="${TA_AGENT:-}"
   local effective_layout=""
+  local effective_agent=""
 
   command -v tmux >/dev/null 2>&1 || { echo "tmux not found"; return 1; }
 
@@ -161,6 +163,14 @@ ta() {
       --layout=*)
         requested_layout="${1#*=}"
         ;;
+      --agent)
+        shift
+        [ "$#" -gt 0 ] || { echo "ta: --agent requires a value"; return 1; }
+        requested_agent="$1"
+        ;;
+      --agent=*)
+        requested_agent="${1#*=}"
+        ;;
       *)
         echo "ta: unknown argument: $1"
         return 1
@@ -173,6 +183,14 @@ ta() {
     ""|wide|normal|compact) ;;
     *)
       echo "ta: invalid layout: ${requested_layout}"
+      return 1
+      ;;
+  esac
+
+  case "${requested_agent}" in
+    ""|copilot|codex|claude|gemini) ;;
+    *)
+      echo "ta: invalid agent: ${requested_agent}"
       return 1
       ;;
   esac
@@ -211,7 +229,17 @@ ta() {
     else
       effective_layout="compact"
     fi
+    if [ -n "${requested_agent}" ]; then
+      effective_agent="${requested_agent}"
+    else
+      case "${effective_layout}" in
+        normal) effective_agent="codex" ;;
+        compact) effective_agent="codex" ;;
+        *) effective_agent="" ;;
+      esac
+    fi
     _ta_dbg "layout=${effective_layout}"
+    _ta_dbg "agent=${effective_agent}"
   }
 
   _ta_window_exists() {
@@ -241,6 +269,15 @@ ta() {
 
   _ta_window_layout() {
     tmux show-window-options -v -t "$1" @ta_layout 2>/dev/null
+  }
+
+  _ta_mark_agent() {
+    local target="$1" agent="$2"
+    _ta_run tmux set-window-option -t "${target}" @ta_agent "${agent}" >/dev/null
+  }
+
+  _ta_window_agent() {
+    tmux show-window-options -v -t "$1" @ta_agent 2>/dev/null
   }
 
   _ta_pane_count() {
@@ -363,6 +400,7 @@ ta() {
     _ta_set_title "${D}" "gemini"
     [ -n "${A}" ] && _ta_run tmux select-pane -t "${A}"
     _ta_mark_layout "${target}" "wide"
+    _ta_mark_agent "${target}" ""
   }
 
   _ta_build_normal_layout() {
@@ -393,12 +431,13 @@ ta() {
     C="$(printf '%s\n' "${rows}" | awk -v x="${left2}" '$2==x {print $0}' | sort -n -k3 | sed -n '2p' | awk '{print $1}')"
 
     _ta_send_cmd "${A}" "nvim"
-    _ta_send_cmd "${B}" "codex"
+    _ta_send_cmd "${B}" "${effective_agent}"
     _ta_set_title "${A}" "nvim"
-    _ta_set_title "${B}" "codex"
+    _ta_set_title "${B}" "${effective_agent}"
     _ta_set_title "${C}" "shell"
     [ -n "${A}" ] && _ta_run tmux select-pane -t "${A}"
     _ta_mark_layout "${target}" "normal"
+    _ta_mark_agent "${target}" "${effective_agent}"
 
     _ta_ensure_tool_window "${s}" "claude" "claude"
     _ta_ensure_tool_window "${s}" "gemini" "gemini"
@@ -419,10 +458,11 @@ ta() {
     B="$(printf '%s\n' "${rows}" | sed -n '2p' | awk '{print $1}')"
 
     _ta_set_title "${A}" "shell"
-    _ta_send_cmd "${B}" "copilot"
-    _ta_set_title "${B}" "copilot"
+    _ta_send_cmd "${B}" "${effective_agent}"
+    _ta_set_title "${B}" "${effective_agent}"
     [ -n "${B}" ] && _ta_run tmux select-pane -t "${B}"
     _ta_mark_layout "${target}" "compact"
+    _ta_mark_agent "${target}" "${effective_agent}"
 
     _ta_ensure_tool_window "${s}" "codex" "codex"
     _ta_ensure_tool_window "${s}" "claude" "claude"
@@ -457,10 +497,11 @@ ta() {
     if ! tmux has-session -t "${S}" 2>/dev/null; then
       _ta_run tmux new-session -d -s "${S}" -n "main" -c "${TA_CWD}"
     fi
-    local ta_cwd_q ta_layout_q
+    local ta_cwd_q ta_layout_q ta_agent_q
     ta_cwd_q="$(printf %q "${TA_CWD}")"
     ta_layout_q="$(printf %q "${effective_layout}")"
-    _ta_run tmux run-shell -t "${S}" "TA_CWD=${ta_cwd_q} TA_LAYOUT=${ta_layout_q} bash -lc 'TA_FORCE=1; . ~/.bashrc; TA_INTERNAL=1 ta'"
+    ta_agent_q="$(printf %q "${effective_agent}")"
+    _ta_run tmux run-shell -t "${S}" "TA_CWD=${ta_cwd_q} TA_LAYOUT=${ta_layout_q} TA_AGENT=${ta_agent_q} bash -lc 'TA_FORCE=1; . ~/.bashrc; TA_INTERNAL=1 ta'"
     _ta_run tmux attach-session -t "${S}"
     return
   fi
@@ -472,11 +513,12 @@ ta() {
     if ! tmux list-windows -t "${S}" -F '#{window_name}' 2>/dev/null | grep -qx "${W}"; then
       _ta_build_layout "${S}" "${W}" "${effective_layout}"
     else
-      local pane_count current_layout expected_panes
+      local pane_count current_layout current_agent expected_panes
       pane_count="$(_ta_pane_count "${S}:${W}")"
       current_layout="$(_ta_window_layout "${S}:${W}")"
+      current_agent="$(_ta_window_agent "${S}:${W}")"
       expected_panes="$(_ta_expected_panes "${effective_layout}")"
-      if [ -z "${pane_count}" ] || [ "${pane_count}" -ne "${expected_panes}" ] || [ "${current_layout}" != "${effective_layout}" ]; then
+      if [ -z "${pane_count}" ] || [ "${pane_count}" -ne "${expected_panes}" ] || [ "${current_layout}" != "${effective_layout}" ] || { [ "${effective_layout}" = "compact" ] && [ "${current_agent}" != "${effective_agent}" ]; } || { [ "${effective_layout}" = "normal" ] && [ "${current_agent}" != "${effective_agent}" ]; }; then
         _ta_build_layout "${S}" "${W}" "${effective_layout}"
       fi
     fi
@@ -492,8 +534,28 @@ ta() {
 
 tl() { tmux ls; }
 taw() { ta --layout wide; }
-tan() { ta --layout normal; }
-tac() { ta --layout compact; }
+tan() {
+  if [ "$#" -gt 1 ]; then
+    echo "tan: usage: tan [copilot|codex|claude|gemini]"
+    return 1
+  fi
+  if [ "$#" -eq 1 ]; then
+    ta --layout normal --agent "$1"
+  else
+    ta --layout normal
+  fi
+}
+tac() {
+  if [ "$#" -gt 1 ]; then
+    echo "tac: usage: tac [copilot|codex|claude|gemini]"
+    return 1
+  fi
+  if [ "$#" -eq 1 ]; then
+    ta --layout compact --agent "$1"
+  else
+    ta --layout compact
+  fi
+}
 tk() { tmux kill-session -t ai-assist 2>/dev/null || true; }
 treset() { tmux kill-server 2>/dev/null || true; }
 tmr() { tmux source-file ~/.tmux.conf 2>/dev/null || true; }

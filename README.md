@@ -35,7 +35,8 @@ ta
 ## 使い方（コマンド）
 - `ta`: 画面幅に応じて `wide / normal / compact` を自動選択して起動
 - `ta --layout wide|normal|compact`: レイアウトを明示指定して起動
-- `taw` / `tan` / `tac`: `wide` / `normal` / `compact` をショートカットで起動
+- `taw` / `tan [agent]` / `tac [agent]`: `wide` / `normal` / `compact` をショートカットで起動
+- `ta --layout normal|compact --agent copilot|codex|claude|gemini`: `normal` / `compact` の agent を明示指定
 - `tl`: tmux セッション一覧
 - `tk`: ai-assist セッション終了
 - `tmr`: tmux 設定再読込
@@ -80,9 +81,9 @@ ta
 狭い画面向け。上下 2 ペインに絞ります。
 ```
 ┌───────────────────────────────┐
-│ nvim                          │
-├───────────────────────────────┤
 │ shell                         │
+├───────────────────────────────┤
+│ copilot|codex|claude|gemini   │
 └───────────────────────────────┘
 ```
 
@@ -92,7 +93,9 @@ ta
 - `ta` は tmux 未起動時にセッションを作成してアタッチ
 - `ta` は既存セッションにウィンドウがなければ新規作成
 - `ws` には現在のレイアウト名を保持し、ずれていたら再構築
+- `normal` では右上に `codex` を既定で起動し、`tan claude` のように agent を指定可能
 - `normal` では `claude` / `gemini` を補助 window に作成
+- `compact` では下段に `codex` を既定で起動し、`tac claude` のように agent を指定可能
 - `compact` では `codex` / `claude` / `gemini` を補助 window に作成
 - SSH 接続時は自動で `ta` を起動（`bashrc` 側の条件で制御）
 
