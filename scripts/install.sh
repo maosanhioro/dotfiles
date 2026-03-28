@@ -237,7 +237,3 @@ echo "セットアップ完了。"
 echo "次の手順:"
 echo "  source ~/.bashrc"
 echo "  ta"
-if is_wsl; then
-  echo "  Windows 側 VS Code にも反映する場合:"
-  echo "  powershell.exe -ExecutionPolicy Bypass -File $(wslpath -w "$REPO_DIR")\\scripts\\install-windows.ps1"
-fi
