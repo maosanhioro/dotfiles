@@ -15,7 +15,7 @@ tmux の AI アシスト作業レイアウト、Neovim の LSP/formatter、bash 
 - Neovim: lazy.nvim + LSP + formatter + treesitter
 - WSL / Ubuntu Desktop の環境差を自動吸収（clipboard / TERM）
 - インストールスクリプトで最小依存を自動セットアップ
-- Copilot instructions は 1 つの正本を Windows / WSL へ配布
+- Copilot / Codex の個人共通振る舞いルールを一元管理
 - 依存やリンクの簡易診断スクリプトを同梱
 - Codex スキルのテンプレを同梱し、プロジェクト配布を支援
 
@@ -55,8 +55,10 @@ powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1
 | instructions 配置方法       | シンボリックリンク                                              | シンボリックリンクを試行し、不可ならコピー       |
 
 ### 正本ファイル（編集元）
-- Copilot rules の正本は `vscode/instructions/personal-dev-rules.instructions.md`
-- ルール変更時は、必要な側のインストーラーを再実行して再反映
+| ルール | 正本 | 反映方法 |
+|---|---|---|
+| Copilot rules | `vscode/instructions/personal-dev-rules.instructions.md` | インストーラーを再実行 |
+| Codex rules | `codex/skills/dev/SKILL.md` | 編集即時反映（シンボリックリンク） |
 
 ### 更新時の再反映手順
 1. 正本を更新
@@ -83,12 +85,19 @@ powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1
 - `powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1`: Windows 側 VS Code instructions を適用
 - `./scripts/codex-skill-init.sh`: Codex スキルテンプレの配置
 
-## Codex スキルテンプレ
+## Codex スキル
+
+### 個人共通振る舞いルール（常時有効）
+- `codex/skills/dev/SKILL.md`: Codex向け個人共通振る舞いルールの正本
+- `./scripts/install.sh` は `codex/skills/dev` を `~/.agents/skills/dev` にリンク（シンボリックリンクのため編集は即時反映）
+- Copilot の `vscode/instructions/personal-dev-rules.instructions.md` と同じ役割を Codex で担う
+
+### プロジェクト配布用ひな形
 - `codex/skills-templates/project/SKILL.md`: プロジェクト共通テンプレ
 - `codex/skills-templates/subproject/SKILL.md`: サブプロジェクト固有テンプレ
-- `./scripts/install.sh` は `codex/skills/dev` を `~/.agents/skills/dev` にリンク
+- `./scripts/codex-skill-init.sh` でプロジェクトへコピーして使う
 
-### テンプレ配置
+#### テンプレ配置
 ```bash
 ./scripts/codex-skill-init.sh --project --dest /path/to/repo
 ./scripts/codex-skill-init.sh --subproject --dest ./apps/foo --output SKILL.md
