@@ -28,6 +28,21 @@ check_link() {
   fi
 }
 
+check_file_or_link() {
+  local path="$1"
+  if [ -L "${path}" ]; then
+    ok "${path} -> $(readlink "${path}")"
+  elif [ -f "${path}" ]; then
+    ok "${path} (regular file)"
+  else
+    warn "${path} が見つかりません"
+  fi
+}
+
+is_wsl() {
+  grep -qi microsoft /proc/version 2>/dev/null
+}
+
 bold "コマンド"
 check_cmd tmux
 check_cmd nvim
@@ -45,6 +60,19 @@ check_link "${HOME}/.gitconfig"
 check_link "${HOME}/.bashrc"
 check_link "${HOME}/.tmux.conf"
 check_link "${HOME}/.config/nvim"
+check_file_or_link "${HOME}/.vscode-server/data/User/instructions/personal-dev-rules.instructions.md"
+
+if is_wsl && command -v cmd.exe >/dev/null 2>&1 && command -v wslpath >/dev/null 2>&1; then
+  win_user_profile_win="$(cmd.exe /C "echo %USERPROFILE%" 2>/dev/null | tr -d '\r')"
+  win_user_profile_wsl="$(wslpath "$win_user_profile_win" 2>/dev/null || true)"
+
+  if [ -n "$win_user_profile_wsl" ] && [ -d "$win_user_profile_wsl" ]; then
+    bold "WSL から見た Windows 側"
+    check_file_or_link "$win_user_profile_wsl/AppData/Roaming/Code/User/instructions/personal-dev-rules.instructions.md"
+    check_file_or_link "$win_user_profile_wsl/AppData/Roaming/Code - Insiders/User/instructions/personal-dev-rules.instructions.md"
+  fi
+fi
 
 bold "メモ"
 echo "  何か足りなければ: ./scripts/install.sh"
+echo "  Windows 側 VS Code 反映: powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1"
