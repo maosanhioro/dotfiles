@@ -354,8 +354,8 @@ ta() {
     pane_cols="$(tmux list-panes -t "${target}" -F '#{pane_id} #{pane_left}' | sort -n -k2)"
     left_pane="$(printf '%s\n' "${pane_cols}" | sed -n '1p' | awk '{print $1}')"
     right_pane="$(printf '%s\n' "${pane_cols}" | sed -n '2p' | awk '{print $1}')"
-    [ -n "${left_pane}" ] && _ta_split_v_pct "${left_pane}" 50 "${TA_LINES}"
-    [ -n "${right_pane}" ] && _ta_split_v_pct "${right_pane}" 50 "${TA_LINES}"
+    [ -n "${left_pane}" ] && _ta_split_v_pct "${left_pane}" 20 "${TA_LINES}"
+    [ -n "${right_pane}" ] && _ta_split_v_pct "${right_pane}" 20 "${TA_LINES}"
 
     rows="$(tmux list-panes -t "${target}" -F '#{pane_id} #{pane_left} #{pane_top}')"
     lefts="$(printf '%s\n' "${rows}" | awk '{print $2}' | sort -n | uniq)"
@@ -388,7 +388,7 @@ ta() {
     root_pane="$(tmux list-panes -t "${target}" -F '#{pane_id}' | head -n 1)"
     [ -n "${root_pane}" ] || { echo "ta: failed to create window"; return 1; }
 
-    _ta_split_v_pct "${root_pane}" 40 "${TA_LINES}"
+    _ta_split_v_pct "${root_pane}" 20 "${TA_LINES}"
 
     rows="$(tmux list-panes -t "${target}" -F '#{pane_id} #{pane_top}' | sort -n -k2)"
     A="$(printf '%s\n' "${rows}" | sed -n '1p' | awk '{print $1}')"
@@ -432,11 +432,7 @@ ta() {
     if ! tmux has-session -t "${S}" 2>/dev/null; then
       _ta_run tmux new-session -d -s "${S}" -n "main" -c "${TA_CWD}"
     fi
-    local ta_cwd_q ta_layout_q ta_agent_q
-    ta_cwd_q="$(printf %q "${TA_CWD}")"
-    ta_layout_q="$(printf %q "${effective_layout}")"
-    ta_agent_q="$(printf %q "${effective_agent}")"
-    _ta_run tmux run-shell -t "${S}" "TA_CWD=${ta_cwd_q} TA_LAYOUT=${ta_layout_q} TA_AGENT=${ta_agent_q} bash -lc 'TA_FORCE=1; . ~/.bashrc; TA_INTERNAL=1 ta'"
+    TA_INTERNAL=1 TA_CWD="${TA_CWD}" TA_LAYOUT="${effective_layout}" TA_AGENT="${effective_agent}" ta
     _ta_run tmux attach-session -t "${S}"
     return
   fi
