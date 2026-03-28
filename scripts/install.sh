@@ -221,6 +221,15 @@ run mkdir -p "$HOME/.agents/skills"
 run ln -sfn "$REPO_DIR/codex/skills/dev" "$HOME/.agents/skills/dev"
 
 ############################################
+# VSCode Copilot Instructions（個人共通）
+############################################
+echo "VSCode Copilot Instructions をリンク中"
+run mkdir -p "$HOME/.vscode-server/data/User/instructions"
+run ln -sfn \
+  "$REPO_DIR/vscode/instructions/personal-dev-rules.instructions.md" \
+  "$HOME/.vscode-server/data/User/instructions/personal-dev-rules.instructions.md"
+
+############################################
 # 完了
 ############################################
 echo
@@ -228,3 +237,7 @@ echo "セットアップ完了。"
 echo "次の手順:"
 echo "  source ~/.bashrc"
 echo "  ta"
+if is_wsl; then
+  echo "  Windows 側 VS Code にも反映する場合:"
+  echo "  powershell.exe -ExecutionPolicy Bypass -File $(wslpath -w "$REPO_DIR")\\scripts\\install-windows.ps1"
+fi
