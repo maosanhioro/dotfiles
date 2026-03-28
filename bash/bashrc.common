@@ -180,7 +180,7 @@ ta() {
   done
 
   case "${requested_layout}" in
-    ""|wide|normal|compact) ;;
+    ""|normal|compact) ;;
     *)
       echo "ta: invalid layout: ${requested_layout}"
       return 1
@@ -222,8 +222,6 @@ ta() {
   _ta_pick_layout() {
     if [ -n "${requested_layout}" ]; then
       effective_layout="${requested_layout}"
-    elif [ "${TA_COLS}" -ge 240 ]; then
-      effective_layout="wide"
     elif [ "${TA_COLS}" -ge 160 ]; then
       effective_layout="normal"
     else
@@ -232,11 +230,7 @@ ta() {
     if [ -n "${requested_agent}" ]; then
       effective_agent="${requested_agent}"
     else
-      case "${effective_layout}" in
-        normal) effective_agent="codex" ;;
-        compact) effective_agent="codex" ;;
-        *) effective_agent="" ;;
-      esac
+      effective_agent="codex"
     fi
     _ta_dbg "layout=${effective_layout}"
     _ta_dbg "agent=${effective_agent}"
@@ -342,71 +336,10 @@ ta() {
     fi
   }
 
-  _ta_build_wide_layout() {
-    local s="$1" w="$2"
-    local target="${s}:${w}" root_pane
-    local total_cols total_lines col right_w mid_w left_w
-    local panes a b c d rows lefts left1 left2 left3 left4 A A2 B C D
-
-    _ta_recreate_window "${s}" "${w}"
-    root_pane="$(tmux list-panes -t "${target}" -F '#{pane_id}' | head -n 1)"
-    [ -n "${root_pane}" ] || { echo "ta: failed to create window"; return 1; }
-
-    total_cols="$(tmux display-message -p -t "${target}" '#{window_width}' 2>/dev/null)"
-    total_lines="$(tmux display-message -p -t "${target}" '#{window_height}' 2>/dev/null)"
-    case "${total_cols}" in ''|*[!0-9]*) total_cols="${TA_COLS}";; esac
-    case "${total_lines}" in ''|*[!0-9]*) total_lines="${TA_LINES}";; esac
-    col=$(( total_cols / 4 ))
-    right_w="${col}"
-    mid_w="${col}"
-    left_w="${col}"
-    [ "${right_w}" -lt 1 ] && right_w=1
-    [ "${mid_w}" -lt 1 ] && mid_w=1
-    [ "${left_w}" -lt 1 ] && left_w=1
-
-    _ta_run tmux split-window -h -l "${right_w}" -t "${root_pane}"
-    _ta_run tmux split-window -h -l "${mid_w}" -t "${root_pane}"
-    _ta_run tmux split-window -h -l "${left_w}" -t "${root_pane}"
-
-    panes="$(tmux list-panes -t "${target}" -F '#{pane_id} #{pane_left}' | sort -n -k2 | awk '{print $1}')"
-    a="$(printf '%s\n' "${panes}" | sed -n '1p')"
-    b="$(printf '%s\n' "${panes}" | sed -n '2p')"
-    c="$(printf '%s\n' "${panes}" | sed -n '3p')"
-    d="$(printf '%s\n' "${panes}" | sed -n '4p')"
-
-    [ -n "${a}" ] && _ta_split_v_pct "${a}" 50 "${total_lines}"
-    [ -n "${a}" ] && _ta_resize_column "${target}" "$(tmux display-message -p -t "${a}" '#{pane_left}' 2>/dev/null)" 50
-
-    rows="$(tmux list-panes -t "${target}" -F '#{pane_id} #{pane_left} #{pane_top}')"
-    lefts="$(printf '%s\n' "${rows}" | awk '{print $2}' | sort -n | uniq)"
-    left1="$(printf '%s\n' "${lefts}" | sed -n '1p')"
-    left2="$(printf '%s\n' "${lefts}" | sed -n '2p')"
-    left3="$(printf '%s\n' "${lefts}" | sed -n '3p')"
-    left4="$(printf '%s\n' "${lefts}" | sed -n '4p')"
-    A="$(printf '%s\n' "${rows}" | awk -v x="${left1}" '$2==x {print $0}' | sort -n -k3 | sed -n '1p' | awk '{print $1}')"
-    A2="$(printf '%s\n' "${rows}" | awk -v x="${left1}" '$2==x {print $0}' | sort -n -k3 | sed -n '2p' | awk '{print $1}')"
-    B="$(printf '%s\n' "${rows}" | awk -v x="${left2}" '$2==x {print $0}' | sort -n -k3 | sed -n '1p' | awk '{print $1}')"
-    C="$(printf '%s\n' "${rows}" | awk -v x="${left3}" '$2==x {print $0}' | sort -n -k3 | sed -n '1p' | awk '{print $1}')"
-    D="$(printf '%s\n' "${rows}" | awk -v x="${left4}" '$2==x {print $0}' | sort -n -k3 | sed -n '1p' | awk '{print $1}')"
-
-    _ta_send_cmd "${A2}" "nvim"
-    _ta_send_cmd "${B}" "codex"
-    _ta_send_cmd "${C}" "claude"
-    _ta_send_cmd "${D}" "gemini"
-    _ta_set_title "${A}" "shell"
-    _ta_set_title "${A2}" "nvim"
-    _ta_set_title "${B}" "codex"
-    _ta_set_title "${C}" "claude"
-    _ta_set_title "${D}" "gemini"
-    [ -n "${A}" ] && _ta_run tmux select-pane -t "${A}"
-    _ta_mark_layout "${target}" "wide"
-    _ta_mark_agent "${target}" ""
-  }
-
   _ta_build_normal_layout() {
     local s="$1" w="$2"
-    local target="${s}:${w}" root_pane right_pane
-    local total_cols left_w pane_cols rows lefts left1 left2 A B C
+    local target="${s}:${w}" root_pane left_pane right_pane
+    local total_cols left_w pane_cols rows lefts left1 left2 A B C D
 
     _ta_recreate_window "${s}" "${w}"
     root_pane="$(tmux list-panes -t "${target}" -F '#{pane_id}' | head -n 1)"
@@ -414,12 +347,14 @@ ta() {
 
     total_cols="$(tmux display-message -p -t "${target}" '#{window_width}' 2>/dev/null)"
     case "${total_cols}" in ''|*[!0-9]*) total_cols="${TA_COLS}";; esac
-    left_w=$(( total_cols * 58 / 100 ))
+    left_w=$(( total_cols * 50 / 100 ))
     [ "${left_w}" -lt 1 ] && left_w=1
 
     _ta_run tmux split-window -h -l "$(( total_cols - left_w ))" -t "${root_pane}"
     pane_cols="$(tmux list-panes -t "${target}" -F '#{pane_id} #{pane_left}' | sort -n -k2)"
+    left_pane="$(printf '%s\n' "${pane_cols}" | sed -n '1p' | awk '{print $1}')"
     right_pane="$(printf '%s\n' "${pane_cols}" | sed -n '2p' | awk '{print $1}')"
+    [ -n "${left_pane}" ] && _ta_split_v_pct "${left_pane}" 50 "${TA_LINES}"
     [ -n "${right_pane}" ] && _ta_split_v_pct "${right_pane}" 50 "${TA_LINES}"
 
     rows="$(tmux list-panes -t "${target}" -F '#{pane_id} #{pane_left} #{pane_top}')"
@@ -427,15 +362,17 @@ ta() {
     left1="$(printf '%s\n' "${lefts}" | sed -n '1p')"
     left2="$(printf '%s\n' "${lefts}" | sed -n '2p')"
     A="$(printf '%s\n' "${rows}" | awk -v x="${left1}" '$2==x {print $0}' | sort -n -k3 | sed -n '1p' | awk '{print $1}')"
-    B="$(printf '%s\n' "${rows}" | awk -v x="${left2}" '$2==x {print $0}' | sort -n -k3 | sed -n '1p' | awk '{print $1}')"
-    C="$(printf '%s\n' "${rows}" | awk -v x="${left2}" '$2==x {print $0}' | sort -n -k3 | sed -n '2p' | awk '{print $1}')"
+    B="$(printf '%s\n' "${rows}" | awk -v x="${left1}" '$2==x {print $0}' | sort -n -k3 | sed -n '2p' | awk '{print $1}')"
+    C="$(printf '%s\n' "${rows}" | awk -v x="${left2}" '$2==x {print $0}' | sort -n -k3 | sed -n '1p' | awk '{print $1}')"
+    D="$(printf '%s\n' "${rows}" | awk -v x="${left2}" '$2==x {print $0}' | sort -n -k3 | sed -n '2p' | awk '{print $1}')"
 
-    _ta_send_cmd "${A}" "nvim"
-    _ta_send_cmd "${B}" "${effective_agent}"
-    _ta_set_title "${A}" "nvim"
-    _ta_set_title "${B}" "${effective_agent}"
-    _ta_set_title "${C}" "shell"
-    [ -n "${A}" ] && _ta_run tmux select-pane -t "${A}"
+    _ta_send_cmd "${A}" "${effective_agent}"
+    _ta_send_cmd "${C}" "nvim"
+    _ta_set_title "${A}" "${effective_agent}"
+    _ta_set_title "${B}" "shell"
+    _ta_set_title "${C}" "nvim"
+    _ta_set_title "${D}" "test/build"
+    [ -n "${C}" ] && _ta_run tmux select-pane -t "${C}"
     _ta_mark_layout "${target}" "normal"
     _ta_mark_agent "${target}" "${effective_agent}"
 
@@ -451,16 +388,16 @@ ta() {
     root_pane="$(tmux list-panes -t "${target}" -F '#{pane_id}' | head -n 1)"
     [ -n "${root_pane}" ] || { echo "ta: failed to create window"; return 1; }
 
-    _ta_split_v_pct "${root_pane}" 70 "${TA_LINES}"
+    _ta_split_v_pct "${root_pane}" 40 "${TA_LINES}"
 
     rows="$(tmux list-panes -t "${target}" -F '#{pane_id} #{pane_top}' | sort -n -k2)"
     A="$(printf '%s\n' "${rows}" | sed -n '1p' | awk '{print $1}')"
     B="$(printf '%s\n' "${rows}" | sed -n '2p' | awk '{print $1}')"
 
-    _ta_set_title "${A}" "shell"
-    _ta_send_cmd "${B}" "${effective_agent}"
-    _ta_set_title "${B}" "${effective_agent}"
-    [ -n "${B}" ] && _ta_run tmux select-pane -t "${B}"
+    _ta_send_cmd "${A}" "${effective_agent}"
+    _ta_set_title "${A}" "${effective_agent}"
+    _ta_set_title "${B}" "shell"
+    [ -n "${A}" ] && _ta_run tmux select-pane -t "${A}"
     _ta_mark_layout "${target}" "compact"
     _ta_mark_agent "${target}" "${effective_agent}"
 
@@ -471,8 +408,7 @@ ta() {
 
   _ta_expected_panes() {
     case "$1" in
-      wide) echo 5 ;;
-      normal) echo 3 ;;
+      normal) echo 4 ;;
       compact) echo 2 ;;
       *) echo 0 ;;
     esac
@@ -481,7 +417,6 @@ ta() {
   _ta_build_layout() {
     local s="$1" w="$2" layout="$3"
     case "${layout}" in
-      wide) _ta_build_wide_layout "${s}" "${w}" ;;
       normal) _ta_build_normal_layout "${s}" "${w}" ;;
       compact) _ta_build_compact_layout "${s}" "${w}" ;;
       *)
@@ -533,7 +468,6 @@ ta() {
 }
 
 tl() { tmux ls; }
-taw() { ta --layout wide; }
 tan() {
   if [ "$#" -gt 1 ]; then
     echo "tan: usage: tan [copilot|codex|claude|gemini]"

@@ -55,10 +55,10 @@ powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1
 | instructions 配置方法       | シンボリックリンク                                              | シンボリックリンクを試行し、不可ならコピー       |
 
 ### 正本ファイル（編集元）
-| ルール | 正本 | 反映方法 |
-|---|---|---|
-| Copilot rules | `vscode/instructions/personal-dev-rules.instructions.md` | インストーラーを再実行 |
-| Codex rules | `codex/skills/dev/SKILL.md` | 編集即時反映（シンボリックリンク） |
+| ルール        | 正本                                                     | 反映方法                           |
+| ------------- | -------------------------------------------------------- | ---------------------------------- |
+| Copilot rules | `vscode/instructions/personal-dev-rules.instructions.md` | インストーラーを再実行             |
+| Codex rules   | `codex/skills/dev/SKILL.md`                              | 編集即時反映（シンボリックリンク） |
 
 ### 更新時の再反映手順
 1. 正本を更新
@@ -74,9 +74,9 @@ powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1
 - `powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1 -Force` 既存 instructions を置き換え
 
 ## 使い方（コマンド）
-- `ta`: 画面幅に応じて `wide / normal / compact` を自動選択して起動
-- `ta --layout wide|normal|compact`: レイアウトを明示指定して起動
-- `taw` / `tan [agent]` / `tac [agent]`: `wide` / `normal` / `compact` をショートカットで起動
+- `ta`: 画面幅に応じて `normal / compact` を自動選択して起動
+- `ta --layout normal|compact`: レイアウトを明示指定して起動
+- `tan [agent]` / `tac [agent]`: `normal` / `compact` をショートカットで起動
 - `ta --layout normal|compact --agent copilot|codex|claude|gemini`: `normal` / `compact` の agent を明示指定
 - `tl`: tmux セッション一覧
 - `tk`: ai-assist セッション終了
@@ -106,33 +106,23 @@ powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1
 ## tmux レイアウト（ta）
 `ta` は画面幅で以下を自動選択します。
 
-### `wide`
-横長フルスクリーン向け。5 ペインを常時表示します。
-```
-┌────────┬────────┬────────┬────────┐
-│ shell  │ codex  │ claude │ gemini │
-├────────┤        │        │        │
-│ nvim   │        │        │        │
-└────────┴────────┴────────┴────────┘
-```
-
 ### `normal`
-通常の 27 インチ前後を想定。左大 + 右上下の 3 ペインです。
+通常の 27 インチ前後を想定。2x2 の 4 ペインです。
 ```
-┌──────────────────────┬────────────┐
-│ nvim                 │ codex      │
-│                      ├────────────┤
-│                      │ shell      │
-└──────────────────────┴────────────┘
+┌────────────┬──────────────────────┐
+│ codex      │ nvim                 │
+├────────────┼──────────────────────┤
+│ shell      │ test/build           │
+└────────────┴──────────────────────┘
 ```
 
 ### `compact`
 狭い画面向け。上下 2 ペインに絞ります。
 ```
 ┌───────────────────────────────┐
-│ shell                         │
+│ codex                         │
 ├───────────────────────────────┤
-│ copilot|codex|claude|gemini   │
+│ shell                         │
 └───────────────────────────────┘
 ```
 
@@ -142,9 +132,9 @@ powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1
 - `ta` は tmux 未起動時にセッションを作成してアタッチ
 - `ta` は既存セッションにウィンドウがなければ新規作成
 - `ws` には現在のレイアウト名を保持し、ずれていたら再構築
-- `normal` では右上に `codex` を既定で起動し、`tan claude` のように agent を指定可能
+- `normal` は左上 `codex` / 左下 `shell` / 右上 `nvim` / 右下 `test/build`
 - `normal` では `claude` / `gemini` を補助 window に作成
-- `compact` では下段に `codex` を既定で起動し、`tac claude` のように agent を指定可能
+- `compact` は上段 `codex` / 下段 `shell`（`tac claude` などで上段 agent を変更可能）
 - `compact` では `codex` / `claude` / `gemini` を補助 window に作成
 - SSH 接続時は自動で `ta` を起動（`bashrc` 側の条件で制御）
 
