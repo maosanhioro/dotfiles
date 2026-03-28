@@ -1,9 +1,10 @@
 # AI-Assisted Workstation Dotfiles
 
-AI アシスト開発と日常開発を高速化する WSL/Ubuntu 向け dotfiles。  
+AI アシスト開発と日常開発を高速化する Windows + WSL/Ubuntu 向け dotfiles。  
 tmux の AI アシスト作業レイアウト、Neovim の LSP/formatter、bash の生産性強化を最初から整備しています。
 
 ## 対象環境
+- Windows 11 (VS Code ローカル)
 - Windows 11 + WSL2 (Ubuntu)
 - Ubuntu Desktop
 - tmux / bash / NVM
@@ -14,10 +15,12 @@ tmux の AI アシスト作業レイアウト、Neovim の LSP/formatter、bash 
 - Neovim: lazy.nvim + LSP + formatter + treesitter
 - WSL / Ubuntu Desktop の環境差を自動吸収（clipboard / TERM）
 - インストールスクリプトで最小依存を自動セットアップ
+- Copilot instructions は 1 つの正本を Windows / WSL へ配布
 - 依存やリンクの簡易診断スクリプトを同梱
 - Codex スキルのテンプレを同梱し、プロジェクト配布を支援
 
 ## セットアップ
+### WSL / Ubuntu 側
 ```bash
 git clone <your repo> ~/dotfiles
 cd ~/dotfiles
@@ -27,10 +30,46 @@ source ~/.bashrc
 ta
 ```
 
+### Windows ローカル VS Code 側
+PowerShell で dotfiles ルートに移動して実行:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1
+```
+
+## 迷わない運用マップ
+### まず何を実行するか
+- Windows ローカルで VS Code を使って開発する: `powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1`
+- Windows の VS Code から WSL Remote で開発する: `./scripts/install.sh`
+- 両方やる: 上の 2 つを両方実行（順不同）
+
+### 環境別に何が反映されるか
+| 項目                        | WSL / Ubuntu (`scripts/install.sh`)                             | Windows ローカル (`scripts/install-windows.ps1`) |
+| --------------------------- | --------------------------------------------------------------- | ------------------------------------------------ |
+| 主目的                      | 開発環境の総合セットアップ                                      | Copilot instructions の反映                      |
+| パッケージ導入              | あり（apt）                                                     | なし                                             |
+| ツール導入対象              | tmux, git, nvim, rg, fd-find, fzf, unzip, bat/batcat, eza, pipx | なし                                             |
+| dotfiles リンク             | あり（gitconfig, bashrc, tmux.conf, nvim）                      | なし                                             |
+| Codex skill リンク          | あり（`~/.agents/skills/dev`）                                  | なし                                             |
+| Copilot instructions 反映先 | `~/.vscode-server/data/User/instructions`                       | `%APPDATA%/Code*/User/instructions`              |
+| instructions 配置方法       | シンボリックリンク                                              | シンボリックリンクを試行し、不可ならコピー       |
+
+### 正本ファイル（編集元）
+- Copilot rules の正本は `vscode/instructions/personal-dev-rules.instructions.md`
+- ルール変更時は、必要な側のインストーラーを再実行して再反映
+
+### 更新時の再反映手順
+1. 正本を更新
+2. WSL 側へ反映したい場合は `./scripts/install.sh` を再実行
+3. Windows 側へ反映したい場合は `powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1 -Force` を実行
+4. `./scripts/doctor.sh` で WSL 側と（WSL 実行時は）Windows 側の配置状態を確認
+
 ## インストールオプション
 - `./scripts/install.sh --dry-run` 実行せずに内容だけ表示
 - `./scripts/install.sh --force` Neovim を再インストール/再リンク
 - `./scripts/install.sh --no-sudo` sudo を使わない（特殊環境向け）
+- `powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1 -DryRun` 実行せずに内容だけ表示
+- `powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1 -Force` 既存 instructions を置き換え
 
 ## 使い方（コマンド）
 - `ta`: 画面幅に応じて `wide / normal / compact` を自動選択して起動
@@ -41,6 +80,7 @@ ta
 - `tk`: ai-assist セッション終了
 - `tmr`: tmux 設定再読込
 - `./scripts/doctor.sh`: 依存やリンクの簡易診断
+- `powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1`: Windows 側 VS Code instructions を適用
 - `./scripts/codex-skill-init.sh`: Codex スキルテンプレの配置
 
 ## Codex スキルテンプレ
@@ -198,6 +238,8 @@ ta
 ## doctor.sh について
 - 目的: 依存コマンドとリンクの有無を素早く確認
 - チェック対象: `tmux`, `nvim`, `rg`, `fd`, `fzf`, `bat`, `eza`, `pipx`, `claude`, `codex`
+- Copilot instructions の配置先（WSL 側）も確認
+- WSL で実行した場合は Windows 側 instructions の有無も確認
 - 期待結果: `[OK]` であれば PATH に存在
 - `[WARN]` の場合は `./scripts/install.sh` を実行
 
@@ -206,6 +248,7 @@ ta
 - `tmux/`: tmux 設定（共通 / WSL / Ubuntu）
 - `nvim/`: Neovim 設定
 - `scripts/install.sh`: セットアップスクリプト
+- `scripts/install-windows.ps1`: Windows ローカル向けセットアップスクリプト
 - `scripts/doctor.sh`: 簡易診断
 
 ## Philosophy
