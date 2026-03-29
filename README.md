@@ -18,6 +18,7 @@ tmux の AI アシスト作業レイアウト、Neovim の LSP/formatter、bash 
 - Copilot / Codex の個人共通振る舞いルールを一元管理
 - 依存やリンクの簡易診断スクリプトを同梱
 - Codex スキルのテンプレを同梱し、プロジェクト配布を支援
+- Copilot custom agents / skills のテンプレを同梱し、プロジェクト配布を支援
 
 ## セットアップ
 ### WSL / Ubuntu 側
@@ -84,6 +85,47 @@ powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1
 - `./scripts/doctor.sh`: 依存やリンクの簡易診断
 - `powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1`: Windows 側 VS Code instructions を適用
 - `./scripts/codex-skill-init.sh`: Codex スキルテンプレの配置
+- `./scripts/copilot-team-init.sh`: Copilot team agents / skills テンプレの配置
+
+## Copilot Team Agents
+
+### 設計方針
+- 個人共通の常時ルールは `vscode/instructions/personal-dev-rules.instructions.md` を正本にする
+- プロジェクトごとの team agents / skills は dotfiles のテンプレを正本にし、各リポジトリの `.github/agents` と `.github/skills` へ配布する
+- gist は共有や試験配布には使えても、正本にはしない
+- agent は役割分担、skill は再利用可能な手順・チェックリストに分離する
+- agent 定義は役割と判断基準を表すものであり、shell 実行や編集権限そのものを付与するものではない
+
+### 実行権限について
+- custom agent の markdown は「何を担当するか」を定義する
+- 実際に shell 実行やファイル編集ができるかは、Copilot が動くランタイムと承認設定に依存する
+- そのためテンプレートは「実行できるなら検証まで行う。できないなら手順を明示する」という書き方にしている
+
+### 4 agent 構成
+- `planner`: 要件整理、作業分解、未確定事項の洗い出し
+- `architect`: 設計判断、トレードオフ比較、移行方針の整理
+- `developer`: 最小差分の実装、検証、ドキュメント更新
+- `reviewer`: バグ、回帰、テスト不足、設計劣化の検出
+
+3 役ではなく 4 役にしている理由は、要件整理と設計判断を分けたほうが handoff が安定するためです。`director` のような常設管理者は置かず、まずは `planner` を入口にして必要な役だけ呼び分ける構成にしています。
+
+### 同梱テンプレート
+- agents 正本: `copilot/agents-templates/*.md`
+- skills 正本: `copilot/skills-templates/*/SKILL.md`
+- 配布先: 対象リポジトリの `.github/agents/*.md` と `.github/skills/*/SKILL.md`
+
+### 初期化
+```bash
+./scripts/copilot-team-init.sh --dest /path/to/repo
+./scripts/copilot-team-init.sh --dest . --agents-only
+./scripts/copilot-team-init.sh --dest ../my-app --skills-only --force
+```
+
+### 含まれる skills
+- `project-intake`: ゴール、制約、未確定事項の整理
+- `architecture-tradeoffs`: 設計案比較、境界定義、移行方針
+- `implementation-safety`: 最小差分実装と検証のガードレール
+- `review-checklist`: バグ、回帰、テスト不足のレビュー観点
 
 ## Codex スキル
 
