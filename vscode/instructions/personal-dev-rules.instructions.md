@@ -1,21 +1,21 @@
-# Personal Copilot Rules for Solo/Internal Tools
+# 個人 Copilot ルール（個人開発 / 内製ツール向け）
 
-## Scope
-- This file defines always-on personal development rules.
-- Apply to coding, review, and refactoring tasks.
+## 適用範囲
+- このファイルは、常時有効な個人開発ルールを定義する。
+- コーディング、レビュー、リファクタリング作業に適用する。
 
-## Fact-Based Responses
-- Do not fabricate APIs, files, commands, or package behavior.
-- If uncertain, say what is unknown and what must be verified.
-- Read relevant files before proposing concrete edits.
-- Distinguish facts from assumptions.
+## 事実ベース回答
+- API、ファイル、コマンド、パッケージ挙動を捏造しない。
+- 不確かな場合は、不明点と確認が必要な点を明示する。
+- 具体的な編集提案の前に、関連ファイルを読む。
+- 事実と推測を明確に区別する。
 
-## Git Workflow
+## Git 運用
 
-### Commit message language and format
-- Commit messages must be written in Japanese.
-- Keep subject concise (about 50 chars).
-- Recommended format:
+### コミットメッセージの言語と形式
+- コミットメッセージは必ず日本語で書く。
+- 件名は簡潔に保つ（目安 50 文字前後）。
+- 推奨形式:
 
 ```text
 [type] 概要
@@ -23,46 +23,46 @@
 必要なら詳細説明
 ```
 
-### Allowed commit types
-- `[feat]` new feature
-- `[fix]` bug fix
-- `[docs]` docs only
-- `[refactor]` refactor without behavior change
-- `[test]` test add/update
-- `[chore]` maintenance
+### 使用するコミット種別
+- `[feat]` 新機能
+- `[fix]` バグ修正
+- `[docs]` ドキュメントのみ
+- `[refactor]` 挙動変更なしのリファクタリング
+- `[test]` テスト追加・更新
+- `[chore]` 保守作業
 
-### Branch strategy
-- `main`: production-ready only
-- `develop`: integration branch for upcoming release
-- `feature/<topic>`: branch from `develop`, merge back to `develop`
-- `bugfix/<topic>`: branch from `develop`, merge back to `develop`
-- `hotfix/<topic>`: branch from `main`, merge to `main` and `develop`
-- `release/<version>`: prepare release, then merge to `main` and `develop`
+### ブランチ戦略
+- `main`: 本番投入可能な状態のみを置く
+- `develop`: 次リリース向けの統合ブランチ
+- `feature/<topic>`: `develop` から切り、`develop` に戻す
+- `bugfix/<topic>`: `develop` から切り、`develop` に戻す
+- `hotfix/<topic>`: `main` から切り、`main` と `develop` に戻す
+- `release/<version>`: リリース準備用。完了後に `main` と `develop` に戻す
 
-### Pull request minimum rules
-- Explain why, not only what changed.
-- Ensure tests pass before merge.
-- Keep PR scope small and focused.
+### Pull Request の最低ルール
+- 何を変えたかだけでなく、なぜ変えるのかを書く。
+- マージ前にテストを通す。
+- PR のスコープは小さく、目的を絞る。
 
-## Coding Quality
-- Prefer simple, readable code over clever code.
-- Keep functions small and composable.
-- Avoid unnecessary dependencies.
-- Follow project formatter/linter settings when present.
+## コーディング品質
+- 巧妙さより、単純で読みやすいコードを優先する。
+- 関数は小さく、組み合わせやすく保つ。
+- 不要な依存は追加しない。
+- プロジェクトに formatter / linter 設定がある場合はそれに従う。
 
-## Testing
-- Add tests for new behavior.
-- Add regression tests for bug fixes.
-- Run relevant tests after edits and report results.
+## テスト
+- 新しい挙動にはテストを追加する。
+- バグ修正には回帰テストを追加する。
+- 編集後は関連テストを実行し、結果を報告する。
 
-## Security Baseline
-- Never hardcode secrets.
-- Validate and sanitize external input.
-- Avoid logging sensitive values.
+## セキュリティ基準
+- 秘密情報をハードコードしない。
+- 外部入力は検証・サニタイズする。
+- 機微な値をログ出力しない。
 
-## Documentation
-- Update README or inline docs for behavior changes.
-- Document non-obvious decisions near the code.
+## ドキュメント
+- 挙動変更があれば README やインラインドキュメントを更新する。
+- 自明でない判断はコード近傍に記録する。
 
-## Priority with project rules
-- If a project has `.github/copilot-instructions.md`, project-specific rules can override this default.
+## プロジェクト固有ルールとの優先順位
+- プロジェクトに `.github/copilot-instructions.md` がある場合は、そのプロジェクト固有ルールでこの既定値を上書きできる。
