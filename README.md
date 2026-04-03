@@ -25,7 +25,7 @@ tmux の AI アシスト作業レイアウト、Neovim の LSP/formatter、bash 
 ```bash
 git clone <your repo> ~/dotfiles
 cd ~/dotfiles
-chmod +x scripts/install.sh
+chmod +x scripts/install.sh bin/dotfiles bin/aidev
 ./scripts/install.sh
 source ~/.bashrc
 ta
@@ -41,51 +41,77 @@ powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1
 ## 迷わない運用マップ
 ### まず何を実行するか
 - Windows ローカルで VS Code を使って開発する: `powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1`
-- Windows の VS Code から WSL Remote で開発する: `./scripts/install.sh`
+- Windows の VS Code から WSL Remote で開発する: `dotfiles install`
 - 両方やる: 上の 2 つを両方実行（順不同）
 
 ### 環境別に何が反映されるか
-| 項目                        | WSL / Ubuntu (`scripts/install.sh`)                             | Windows ローカル (`scripts/install-windows.ps1`) |
+| 項目                        | WSL / Ubuntu (`dotfiles install`)                               | Windows ローカル (`scripts/install-windows.ps1`) |
 | --------------------------- | --------------------------------------------------------------- | ------------------------------------------------ |
 | 主目的                      | 開発環境の総合セットアップ                                      | Copilot instructions の反映                      |
 | パッケージ導入              | あり（apt）                                                     | なし                                             |
 | ツール導入対象              | tmux, git, nvim, rg, fd-find, fzf, unzip, bat/batcat, eza, pipx | なし                                             |
 | dotfiles リンク             | あり（gitconfig, bashrc, tmux.conf, nvim）                      | なし                                             |
-| Codex skill リンク          | あり（`~/.agents/skills/dev`）                                  | なし                                             |
+| AI グローバル設定リンク     | あり（~/.claude/CLAUDE.md, ~/.agents/skills/dev, Copilot instructions） | なし |
 | Copilot instructions 反映先 | `~/.vscode-server/data/User/instructions`                       | `%APPDATA%/Code*/User/instructions`              |
 | instructions 配置方法       | シンボリックリンク                                              | シンボリックリンクを試行し、不可ならコピー       |
 
 ### 正本ファイル（編集元）
 | ルール        | 正本                                                     | 反映方法                           |
 | ------------- | -------------------------------------------------------- | ---------------------------------- |
-| Copilot rules | `vscode/instructions/personal-dev-rules.instructions.md` | インストーラーを再実行             |
+| Copilot rules | `vscode/instructions/personal-dev-rules.instructions.md` | 編集即時反映（シンボリックリンク） |
+| Claude rules  | `claude/CLAUDE.md`                                       | 編集即時反映（シンボリックリンク） |
 | Codex rules   | `codex/skills/dev/SKILL.md`                              | 編集即時反映（シンボリックリンク） |
 
 ### 更新時の再反映手順
-1. 正本を更新
-2. WSL 側へ反映したい場合は `./scripts/install.sh` を再実行
-3. Windows 側へ反映したい場合は `powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1 -Force` を実行
-4. `./scripts/doctor.sh` で WSL 側と（WSL 実行時は）Windows 側の配置状態を確認
+1. 正本を更新（即時反映のため再インストール不要）
+2. Windows 側へ反映したい場合は `powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1 -Force` を実行
+3. `dotfiles doctor` で配置状態を確認
 
-## インストールオプション
-- `./scripts/install.sh --dry-run` 実行せずに内容だけ表示
-- `./scripts/install.sh --force` Neovim を再インストール/再リンク
-- `./scripts/install.sh --no-sudo` sudo を使わない（特殊環境向け）
-- `powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1 -DryRun` 実行せずに内容だけ表示
-- `powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1 -Force` 既存 instructions を置き換え
+## コマンド一覧
 
-## 使い方（コマンド）
+### dotfiles — 環境全体の管理
+```bash
+dotfiles install          # dotfiles 環境をセットアップ（シンボリックリンク張り・パッケージ導入）
+dotfiles uninstall        # dotfiles のシンボリックリンクをすべて外す（実ファイルは残る）
+dotfiles doctor           # 依存コマンドとリンクの健全性チェック
+```
+
+オプション（install）:
+- `dotfiles install --dry-run` 実行せずに内容だけ表示
+- `dotfiles install --force` Neovim を再インストール/再リンク
+- `dotfiles install --no-sudo` sudo を使わない（特殊環境向け）
+
+### aidev — プロジェクト単位の AI 環境管理
+```bash
+# プロジェクトルートで実行
+aidev init                # AI 環境を全部セットアップ
+aidev init claude         # CLAUDE.md のみ配置
+aidev init codex          # CODEX.md のみ配置
+aidev init copilot        # .github/copilot-instructions.md のみ配置
+aidev init agents         # AGENTS.md + .gitignore 追記のみ
+
+aidev clean               # AI ファイルをすべて削除
+aidev clean claude        # CLAUDE.md のみ削除
+aidev clean codex         # CODEX.md のみ削除
+aidev clean copilot       # .github/copilot-instructions.md のみ削除
+aidev clean agents        # AGENTS.md のみ削除
+
+aidev copilot team        # Copilot team agents / skills テンプレートを配置
+aidev codex skill         # Codex SKILL.md テンプレートを配置
+```
+
+オプション（init）:
+- `aidev init --force` 既存ファイルがあっても上書き
+- `aidev init --dry-run` 実行せずに内容だけ表示
+
+### tmux
 - `ta`: 画面幅に応じて `normal / compact` を自動選択して起動
 - `ta --layout normal|compact`: レイアウトを明示指定して起動
 - `tan [agent]` / `tac [agent]`: `normal` / `compact` をショートカットで起動
-- `ta --layout normal|compact --agent copilot|codex|claude|gemini`: `normal` / `compact` の agent を明示指定
+- `ta --layout normal|compact --agent copilot|codex|claude|gemini`: agent を明示指定
 - `tl`: tmux セッション一覧
 - `tk`: ai-assist セッション終了
 - `tmr`: tmux 設定再読込
-- `./scripts/doctor.sh`: 依存やリンクの簡易診断
-- `powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1`: Windows 側 VS Code instructions を適用
-- `./scripts/codex-skill-init.sh`: Codex スキルテンプレの配置
-- `./scripts/copilot-team-init.sh`: Copilot team agents / skills テンプレの配置
 
 ## Copilot Team Agents
 
@@ -116,9 +142,9 @@ powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1
 
 ### 初期化
 ```bash
-./scripts/copilot-team-init.sh --dest /path/to/repo
-./scripts/copilot-team-init.sh --dest . --agents-only
-./scripts/copilot-team-init.sh --dest ../my-app --skills-only --force
+aidev copilot team --dest /path/to/repo
+aidev copilot team --dest . --agents-only
+aidev copilot team --dest ../my-app --skills-only --force
 ```
 
 ### 含まれる skills
@@ -141,8 +167,8 @@ powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1
 
 #### テンプレ配置
 ```bash
-./scripts/codex-skill-init.sh --project --dest /path/to/repo
-./scripts/codex-skill-init.sh --subproject --dest ./apps/foo --output SKILL.md
+aidev codex skill --project --dest /path/to/repo
+aidev codex skill --subproject --dest ./apps/foo --output SKILL.md
 ```
 
 ## tmux レイアウト（ta）
@@ -276,8 +302,8 @@ powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1
 - `ff`: fzf でファイル選択 → エディタで開く（`fzf` 必須）
 - `fcd`: fzf でディレクトリ移動（`fzf` 必須）
 
-## doctor.sh について
-- 目的: 依存コマンドとリンクの有無を素早く確認
+## doctor について
+- 目的: 依存コマンドとリンクの有無を素早く確認（`dotfiles doctor` で実行）
 - チェック対象: `tmux`, `nvim`, `rg`, `fd`, `fzf`, `bat`, `eza`, `pipx`, `claude`, `codex`
 - Copilot instructions の配置先（WSL 側）も確認
 - WSL で実行した場合は Windows 側 instructions の有無も確認
@@ -288,9 +314,14 @@ powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1
 - `bash/`: bash 設定（共通 / WSL / Ubuntu）
 - `tmux/`: tmux 設定（共通 / WSL / Ubuntu）
 - `nvim/`: Neovim 設定
-- `scripts/install.sh`: セットアップスクリプト
+- `claude/CLAUDE.md`: Claude Code グローバル設定の正本
+- `vscode/instructions/`: Copilot グローバル設定の正本
+- `codex/skills/dev/SKILL.md`: Codex CLI グローバル設定の正本
+- `templates/`: `aidev init` が使うプロジェクトレベルテンプレート
+- `bin/dotfiles`: dotfiles 管理コマンド
+- `bin/aidev`: AI 環境管理コマンド
+- `scripts/install.sh`: セットアップスクリプト（`dotfiles install` から呼ばれる）
 - `scripts/install-windows.ps1`: Windows ローカル向けセットアップスクリプト
-- `scripts/doctor.sh`: 簡易診断
 
 ## Philosophy
 - 自動化できることは最初から自動化する

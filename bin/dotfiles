@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+
+usage() {
+  cat <<'USAGE'
+使い方: dotfiles <subcommand> [options]
+
+サブコマンド:
+  install     dotfiles 環境をセットアップ（シンボリックリンク張り・パッケージ導入）
+  uninstall   dotfiles のシンボリックリンクをすべて外す（実ファイルは残る）
+  doctor      依存コマンドとリンクの健全性チェック
+
+オプションはサブコマンドに `--help` で確認できます。
+USAGE
+}
+
+SUBCOMMAND="${1:-help}"
+shift || true
+
+case "$SUBCOMMAND" in
+  install)
+    exec "$REPO_DIR/scripts/install.sh" "$@"
+    ;;
+  uninstall)
+    exec "$REPO_DIR/scripts/aidev/uninstall.sh" "$@"
+    ;;
+  doctor)
+    exec "$REPO_DIR/scripts/aidev/doctor.sh" "$@"
+    ;;
+  help|--help|-h)
+    usage
+    ;;
+  *)
+    echo "不明なサブコマンド: $SUBCOMMAND"
+    echo ""
+    usage
+    exit 1
+    ;;
+esac

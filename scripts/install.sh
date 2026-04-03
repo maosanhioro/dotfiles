@@ -214,6 +214,14 @@ run mkdir -p "$HOME/.config"
 run ln -sfn "$REPO_DIR/nvim" "$HOME/.config/nvim"
 
 ############################################
+# bin コマンド（dotfiles / aidev）
+############################################
+echo "bin コマンドをリンク中"
+run mkdir -p "$HOME/.local/bin"
+run ln -sfn "$REPO_DIR/bin/dotfiles" "$HOME/.local/bin/dotfiles"
+run ln -sfn "$REPO_DIR/bin/aidev" "$HOME/.local/bin/aidev"
+
+############################################
 # Codex CLI Skills（汎用）
 ############################################
 echo "Codex CLI Skills（汎用）をリンク中"

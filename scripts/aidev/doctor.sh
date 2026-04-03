@@ -74,5 +74,6 @@ if is_wsl && command -v cmd.exe >/dev/null 2>&1 && command -v wslpath >/dev/null
 fi
 
 bold "メモ"
-echo "  何か足りなければ: ./scripts/install.sh"
+echo "  何か足りなければ: dotfiles install"
+echo "  AI環境のセットアップ: aidev init"
 echo "  Windows 側 VS Code 反映: powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1"

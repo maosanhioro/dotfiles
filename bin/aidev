@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+
+usage() {
+  cat <<'USAGE'
+使い方: aidev <subcommand> [options]
+
+サブコマンド:
+  init [claude|codex|copilot|agents]
+      プロジェクトの AI 環境をセットアップ（引数なしで全部）
+
+  clean [claude|codex|copilot|agents]
+      プロジェクトの AI ファイルを削除（引数なしで全部）
+
+  copilot team [options]
+      Copilot team agents / skills テンプレートを配置
+
+  codex skill [options]
+      Codex SKILL.md テンプレートを配置
+
+オプションはサブコマンドに `--help` で確認できます。
+USAGE
+}
+
+SUBCOMMAND="${1:-help}"
+shift || true
+
+case "$SUBCOMMAND" in
+  init)
+    exec "$REPO_DIR/scripts/aidev/init.sh" "$@"
+    ;;
+  clean)
+    exec "$REPO_DIR/scripts/aidev/clean.sh" "$@"
+    ;;
+  copilot)
+    SUB2="${1:-help}"
+    shift || true
+    case "$SUB2" in
+      team)
+        exec "$REPO_DIR/scripts/aidev/copilot-team.sh" "$@"
+        ;;
+      help|--help|-h)
+        echo "使い方: aidev copilot team [options]"
+        echo ""
+        exec "$REPO_DIR/scripts/aidev/copilot-team.sh" --help
+        ;;
+      *)
+        echo "不明なサブコマンド: aidev copilot $SUB2"
+        echo "使い方: aidev copilot team [options]"
+        exit 1
+        ;;
+    esac
+    ;;
+  codex)
+    SUB2="${1:-help}"
+    shift || true
+    case "$SUB2" in
+      skill)
+        exec "$REPO_DIR/scripts/aidev/codex-skill.sh" "$@"
+        ;;
+      help|--help|-h)
+        echo "使い方: aidev codex skill [options]"
+        echo ""
+        exec "$REPO_DIR/scripts/aidev/codex-skill.sh" --help
+        ;;
+      *)
+        echo "不明なサブコマンド: aidev codex $SUB2"
+        echo "使い方: aidev codex skill [options]"
+        exit 1
+        ;;
+    esac
+    ;;
+  help|--help|-h)
+    usage
+    ;;
+  *)
+    echo "不明なサブコマンド: $SUBCOMMAND"
+    echo ""
+    usage
+    exit 1
+    ;;
+esac

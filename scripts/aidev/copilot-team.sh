@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../.." && pwd)"
 AGENT_TEMPLATE_ROOT="$REPO_DIR/copilot/agents-templates"
 SKILL_TEMPLATE_ROOT="$REPO_DIR/copilot/skills-templates"
 
