@@ -11,10 +11,10 @@ TARGET="${1:-all}"
 # 第1引数がオプションフラグの場合は TARGET を all にする
 case "$TARGET" in
   --dry-run|--force|--help|-h) TARGET="all" ;;
-  all|claude|codex|copilot|agents) shift || true ;;
+  all|claude|codex|copilot|agents|--personal|--work) shift || true ;;
   *)
     echo "不明なターゲット: $TARGET"
-    echo "使い方: aidev init [claude|codex|copilot|agents] [--force] [--dry-run]"
+    echo "使い方: aidev init [claude|codex|copilot|agents|--personal|--work] [--force] [--dry-run]"
     exit 1
     ;;
 esac
@@ -28,10 +28,14 @@ for arg in "$@"; do
 使い方: aidev init [target] [options]
 
 ターゲット（省略時はすべて）:
-  claude    CLAUDE.md をプロジェクトルートに配置
-  codex     CODEX.md をプロジェクトルートに配置
-  copilot   .github/copilot-instructions.md を配置
-  agents    AGENTS.md を配置 + .gitignore に追記
+  claude      CLAUDE.md をプロジェクトルートに配置
+  codex       CODEX.md をプロジェクトルートに配置
+  copilot     .github/copilot-instructions.md を配置
+  agents      AGENTS.md を配置 + .gitignore に追記
+
+プリセット:
+  --personal  個人開発用（Codex CLI + Claude Code）: codex + claude + agents
+  --work      会社用（Copilot + Claude Code）: copilot + claude + agents
 
 オプション:
   --force     既存ファイルがあっても上書き
@@ -125,10 +129,22 @@ case "$TARGET" in
     init_copilot
     init_agents
     ;;
-  claude)  init_claude ;;
-  codex)   init_codex ;;
-  copilot) init_copilot ;;
-  agents)  init_agents ;;
+  claude)     init_claude ;;
+  codex)      init_codex ;;
+  copilot)    init_copilot ;;
+  agents)     init_agents ;;
+  --personal)
+    echo "プリセット: personal（Codex CLI + Claude Code）"
+    init_codex
+    init_claude
+    init_agents
+    ;;
+  --work)
+    echo "プリセット: work（Copilot + Claude Code）"
+    init_copilot
+    init_claude
+    init_agents
+    ;;
 esac
 
 echo ""
