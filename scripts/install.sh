@@ -221,6 +221,15 @@ run mkdir -p "$HOME/.agents/skills"
 run ln -sfn "$REPO_DIR/codex/skills/dev" "$HOME/.agents/skills/dev"
 
 ############################################
+# Claude Code グローバル設定（CLI・VSCode拡張共通）
+############################################
+echo "Claude Code グローバル設定をリンク中"
+run mkdir -p "$HOME/.claude"
+run ln -sfn \
+  "$REPO_DIR/claude/CLAUDE.md" \
+  "$HOME/.claude/CLAUDE.md"
+
+############################################
 # VSCode Copilot Instructions（個人共通）
 ############################################
 echo "VSCode Copilot Instructions をリンク中"
