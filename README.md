@@ -39,6 +39,18 @@ powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1
 ```
 
 ## 迷わない運用マップ
+
+### dotfiles install と aidev init の違い
+
+`dotfiles install` は **マシン全体の環境セットアップ** です。AIのグローバル設定（`~/.claude/CLAUDE.md` や `~/.agents/skills/dev` など）も含まれますが、これらは「このマシンで開発するための基盤」として整備されるものです。新しいマシンで1回だけ実行します。
+
+`aidev init` は **プロジェクト単位の AI 環境セットアップ** です。プロジェクトルートに `CLAUDE.md` や `AGENTS.md` を配置します。プロジェクトを始めるたびに実行します。
+
+```
+新マシン: dotfiles install  →  マシン全体 + AI グローバル設定
+新プロジェクト: aidev init  →  そのプロジェクト固有の AI 設定
+```
+
 ### まず何を実行するか
 - Windows ローカルで VS Code を使って開発する: `powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1`
 - Windows の VS Code から WSL Remote で開発する: `dotfiles install`
