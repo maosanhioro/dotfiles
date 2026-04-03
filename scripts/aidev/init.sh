@@ -110,7 +110,7 @@ init_codex() {
 
 init_copilot() {
   place_file "$TEMPLATE_ROOT/copilot-instructions.md" "$DEST_DIR/.github/copilot-instructions.md"
-  # copilot-instructions.md は .gitignore しない（チーム共有の可能性があるため）
+  gitignore_add ".github/copilot-instructions.md"
 }
 
 init_agents() {
