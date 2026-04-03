@@ -77,17 +77,24 @@ place_file() {
 gitignore_add() {
   local entry="$1"
   local gitignore="$DEST_DIR/.gitignore"
+  local header="# AI agent files (managed by aidev)"
 
   if [ "$DRY_RUN" -eq 1 ]; then
     printf '[dry-run] .gitignore に追記: %s\n' "$entry"
     return 0
   fi
 
-  if [ -f "$gitignore" ] && grep -qxF "$entry" "$gitignore"; then
-    return 0  # 既に記載あり
+  # エントリが既に存在する場合はスキップ（2>/dev/null でファイル未存在エラーを抑制）
+  if grep -qxF "$entry" "$gitignore" 2>/dev/null; then
+    return 0
   fi
 
-  printf '\n# AI agent files (managed by aidev)\n%s\n' "$entry" >> "$gitignore"
+  # ヘッダーが未記載の場合のみ1回だけ追加
+  if ! grep -qxF "$header" "$gitignore" 2>/dev/null; then
+    printf '\n%s\n' "$header" >> "$gitignore"
+  fi
+
+  printf '%s\n' "$entry" >> "$gitignore"
   echo ".gitignore に追記: $entry"
 }
 
