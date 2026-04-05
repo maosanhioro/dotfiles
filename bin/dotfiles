@@ -21,13 +21,13 @@ shift || true
 
 case "$SUBCOMMAND" in
   install)
-    exec "$REPO_DIR/scripts/install.sh" "$@"
+    exec "$REPO_DIR/scripts/dotfiles/install.sh" "$@"
     ;;
   uninstall)
-    exec "$REPO_DIR/scripts/aidev/uninstall.sh" "$@"
+    exec "$REPO_DIR/scripts/dotfiles/uninstall.sh" "$@"
     ;;
   doctor)
-    exec "$REPO_DIR/scripts/aidev/doctor.sh" "$@"
+    exec "$REPO_DIR/scripts/dotfiles/doctor.sh" "$@"
     ;;
   help|--help|-h)
     usage
