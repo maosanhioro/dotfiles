@@ -169,13 +169,13 @@ aidev copilot team --dest ../my-app --skills-only --force
 
 ### 個人共通振る舞いルール（常時有効）
 - `codex/skills/dev/SKILL.md`: Codex向け個人共通振る舞いルールの正本
-- `./scripts/install.sh` は `codex/skills/dev` を `~/.agents/skills/dev` にリンク（シンボリックリンクのため編集は即時反映）
+- `dotfiles install` は `codex/skills/dev` を `~/.agents/skills/dev` にリンク（シンボリックリンクのため編集は即時反映）
 - Copilot の `vscode/instructions/personal-dev-rules.instructions.md` と同じ役割を Codex で担う
 
 ### プロジェクト配布用ひな形
 - `codex/skills-templates/project/SKILL.md`: プロジェクト共通テンプレ
 - `codex/skills-templates/subproject/SKILL.md`: サブプロジェクト固有テンプレ
-- `./scripts/codex-skill-init.sh` でプロジェクトへコピーして使う
+- `aidev codex skill` でプロジェクトへコピーして使う
 
 #### テンプレ配置
 ```bash
@@ -320,7 +320,7 @@ aidev codex skill --subproject --dest ./apps/foo --output SKILL.md
 - Copilot instructions の配置先（WSL 側）も確認
 - WSL で実行した場合は Windows 側 instructions の有無も確認
 - 期待結果: `[OK]` であれば PATH に存在
-- `[WARN]` の場合は `./scripts/install.sh` を実行
+- `[WARN]` の場合は `dotfiles install` を実行
 
 ## 主要ファイル
 - `bash/`: bash 設定（共通 / WSL / Ubuntu）
