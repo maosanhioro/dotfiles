@@ -76,4 +76,4 @@ fi
 bold "メモ"
 echo "  何か足りなければ: dotfiles install"
 echo "  AI環境のセットアップ: aidev init"
-echo "  Windows 側 VS Code 反映: powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1"
+echo "  Windows 側 VS Code 反映: powershell -ExecutionPolicy Bypass -File scripts/dotfiles/install-windows.ps1"
