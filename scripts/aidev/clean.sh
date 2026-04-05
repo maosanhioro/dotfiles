@@ -99,6 +99,7 @@ clean_codex() {
 
 clean_copilot() {
   remove_file "$DEST_DIR/.github/copilot-instructions.md"
+  gitignore_remove ".github/copilot-instructions.md"
 }
 
 clean_agents() {

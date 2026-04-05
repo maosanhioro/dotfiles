@@ -103,16 +103,16 @@ aidev init --work         # 会社用: Copilot + Claude Code + AGENTS.md
 
 # 個別指定
 aidev init                # AI 環境を全部セットアップ
-aidev init claude         # CLAUDE.md のみ配置
-aidev init codex          # CODEX.md のみ配置
-aidev init copilot        # .github/copilot-instructions.md のみ配置
-aidev init agents         # AGENTS.md + .gitignore 追記のみ
+aidev init claude         # CLAUDE.md を配置 + .gitignore 追記
+aidev init codex          # CODEX.md を配置 + .gitignore 追記
+aidev init copilot        # .github/copilot-instructions.md を配置 + .gitignore 追記
+aidev init agents         # AGENTS.md を配置 + .gitignore 追記
 
-aidev clean               # AI ファイルをすべて削除
-aidev clean claude        # CLAUDE.md のみ削除
-aidev clean codex         # CODEX.md のみ削除
-aidev clean copilot       # .github/copilot-instructions.md のみ削除
-aidev clean agents        # AGENTS.md のみ削除
+aidev clean               # AI ファイルをすべて削除 + .gitignore から除去
+aidev clean claude        # CLAUDE.md を削除 + .gitignore から除去
+aidev clean codex         # CODEX.md を削除 + .gitignore から除去
+aidev clean copilot       # .github/copilot-instructions.md を削除 + .gitignore から除去
+aidev clean agents        # AGENTS.md を削除 + .gitignore から除去
 
 aidev copilot team        # Copilot team agents / skills テンプレートを配置
 aidev codex skill         # Codex SKILL.md テンプレートを配置
@@ -332,14 +332,19 @@ aidev codex skill --subproject --dest ./apps/foo --output SKILL.md
 - `bash/`: bash 設定（共通 / WSL / Ubuntu）
 - `tmux/`: tmux 設定（共通 / WSL / Ubuntu）
 - `nvim/`: Neovim 設定
+- `git/gitconfig`: Git 設定（`~/.gitconfig` にリンク）
 - `claude/CLAUDE.md`: Claude Code グローバル設定の正本
 - `vscode/instructions/`: Copilot グローバル設定の正本
 - `codex/skills/dev/SKILL.md`: Codex CLI グローバル設定の正本
-- `templates/`: `aidev init` が使うプロジェクトレベルテンプレート
-- `bin/dotfiles`: dotfiles 管理コマンド
-- `bin/aidev`: AI 環境管理コマンド
+- `codex/skills-templates/`: Codex プロジェクト配布用テンプレート（project / subproject）
+- `copilot/agents-templates/`: Copilot team agents テンプレート（planner / architect / developer / reviewer）
+- `copilot/skills-templates/`: Copilot team skills テンプレート（project-intake / architecture-tradeoffs / implementation-safety / review-checklist）
+- `templates/`: `aidev init` が使うプロジェクトレベルテンプレート（CLAUDE.md / CODEX.md / copilot-instructions.md / AGENTS.md）
+- `bin/dotfiles`: dotfiles 管理コマンド（install / uninstall / doctor）
+- `bin/aidev`: AI 環境管理コマンド（init / clean / copilot team / codex skill）
 - `scripts/install.sh`: セットアップスクリプト（`dotfiles install` から呼ばれる）
 - `scripts/install-windows.ps1`: Windows ローカル向けセットアップスクリプト
+- `scripts/aidev/`: aidev サブコマンド実装（init / clean / uninstall / doctor / copilot-team / codex-skill）
 
 ## Philosophy
 - 自動化できることは最初から自動化する
