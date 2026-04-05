@@ -268,9 +268,9 @@ dotfiles/
 │   ├── dotfiles          # dotfiles install / uninstall / doctor
 │   └── aidev             # aidev init / clean / copilot team / codex skill
 ├── scripts/
-│   ├── install.sh        # dotfiles install の実装
-│   ├── install-windows.ps1
-│   └── aidev/            # aidev サブコマンドの実装
+│   ├── dotfiles/         # dotfiles サブコマンドの実装（install / uninstall / doctor）
+│   ├── aidev/            # aidev サブコマンドの実装（init / clean / copilot-team / codex-skill）
+│   └── install-windows.ps1
 ├── templates/            # aidev init が配置するプロジェクトレベルテンプレート
 │   ├── CLAUDE.md
 │   ├── CODEX.md          # 完全なルールセット入り
