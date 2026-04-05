@@ -27,7 +27,7 @@ source ~/.bashrc
 ### Windows ローカル VS Code（初回）
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/install-windows.ps1
+powershell -ExecutionPolicy Bypass -File scripts/dotfiles/install-windows.ps1
 ```
 
 Copilot instructions を `%APPDATA%/Code*/User/instructions/` に配置します。
@@ -268,9 +268,8 @@ dotfiles/
 │   ├── dotfiles          # dotfiles install / uninstall / doctor
 │   └── aidev             # aidev init / clean / copilot team / codex skill
 ├── scripts/
-│   ├── dotfiles/         # dotfiles サブコマンドの実装（install / uninstall / doctor）
-│   ├── aidev/            # aidev サブコマンドの実装（init / clean / copilot-team / codex-skill）
-│   └── install-windows.ps1
+│   ├── dotfiles/         # dotfiles サブコマンドの実装（install / uninstall / doctor / install-windows）
+│   └── aidev/            # aidev サブコマンドの実装（init / clean / copilot-team / codex-skill）
 ├── templates/            # aidev init が配置するプロジェクトレベルテンプレート
 │   ├── CLAUDE.md
 │   ├── CODEX.md          # 完全なルールセット入り
