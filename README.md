@@ -62,7 +62,7 @@ aidev init --work         # 会社用:     Copilot + Claude Code + AGENTS.md
 # 個別指定
 aidev init                # 全ファイルを配置
 aidev init claude         # CLAUDE.md を配置
-aidev init codex          # CODEX.md を配置
+aidev init codex          # SKILL.md を配置
 aidev init copilot        # .github/copilot-instructions.md を配置
 aidev init agents         # AGENTS.md を配置
 
@@ -106,9 +106,9 @@ tmr                       # tmux 設定再読込
 | --- | --- | --- |
 | GitHub Copilot（VSCode） | ✅ `applyTo: '**'` | `vscode/instructions/personal-dev-rules.instructions.md` |
 | Claude Code（CLI / VSCode拡張） | ✅ セッション開始時に自動読込 | `claude/CLAUDE.md` |
-| Codex CLI | ❌ 手動指示が必要 | `codex/skills/dev/SKILL.md` |
+| Codex CLI | ✅ 共通 skill を配置 | `codex/skills/dev/SKILL.md` |
 
-> **Codex CLI のみ** グローバル自動適用の仕組みがないため、プロジェクトの `CODEX.md` を使い「CODEX.md を読んでください」とセッション開始時に指示します。
+`dotfiles install` は Codex 用の共通 skill を `~/.agents/skills/dev` にリンクします。Codex 向けのプロジェクト固有ルールは `aidev init codex` で `SKILL.md` を配置して管理します。
 
 正本を編集すればシンボリックリンク経由で即時反映されます（再インストール不要）。
 
@@ -119,7 +119,7 @@ tmr                       # tmux 設定再読込
 | ファイル | 対象 | 内容 |
 | --- | --- | --- |
 | `CLAUDE.md` | Claude Code | プロジェクト概要・固有ルール |
-| `CODEX.md` | Codex CLI | 完全なルールセット（グローバル代替） |
+| `SKILL.md` | Codex CLI | プロジェクト固有ルール |
 | `.github/copilot-instructions.md` | Copilot | プロジェクト固有ルール |
 | `AGENTS.md` | 全エージェント共通 | エージェント間引き継ぎログ |
 
@@ -270,9 +270,8 @@ dotfiles/
 ├── scripts/
 │   ├── dotfiles/         # dotfiles サブコマンドの実装（install / uninstall / doctor / install-windows）
 │   └── aidev/            # aidev サブコマンドの実装（init / clean / copilot-team / codex-skill）
-├── templates/            # aidev init が配置するプロジェクトレベルテンプレート
+├── templates/            # aidev init が配置する共通テンプレート
 │   ├── CLAUDE.md
-│   ├── CODEX.md          # 完全なルールセット入り
 │   ├── copilot-instructions.md
 │   └── AGENTS.md
 ├── claude/
@@ -281,7 +280,7 @@ dotfiles/
 │   └── instructions/     # Copilot グローバル設定の正本
 ├── codex/
 │   ├── skills/dev/       # Codex CLI グローバル設定の正本
-│   └── skills-templates/ # Codex プロジェクト配布テンプレート
+│   └── skills-templates/ # Codex プロジェクト配布テンプレート（SKILL.md）
 ├── copilot/
 │   ├── agents-templates/ # Copilot team agents テンプレート
 │   └── skills-templates/ # Copilot team skills テンプレート

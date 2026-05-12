@@ -23,7 +23,7 @@ for arg in "$@"; do
 
 ターゲット（省略時はすべて）:
   claude    CLAUDE.md を削除 + .gitignore から除去
-  codex     CODEX.md を削除 + .gitignore から除去
+  codex     SKILL.md を削除 + .gitignore から除去（旧 CODEX.md にも対応）
   copilot   .github/copilot-instructions.md を削除
   agents    AGENTS.md を削除 + .gitignore から除去
 
@@ -84,6 +84,10 @@ gitignore_remove() {
       next
     } {print}' > "$gitignore.tmp" && mv "$gitignore.tmp" "$gitignore"
 
+  if ! grep -q '[^[:space:]]' "$gitignore"; then
+    rm -f "$gitignore"
+  fi
+
   echo ".gitignore から除去: $entry"
 }
 
@@ -93,7 +97,9 @@ clean_claude() {
 }
 
 clean_codex() {
+  remove_file "$DEST_DIR/SKILL.md"
   remove_file "$DEST_DIR/CODEX.md"
+  gitignore_remove "SKILL.md"
   gitignore_remove "CODEX.md"
 }
 

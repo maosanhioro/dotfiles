@@ -12,7 +12,7 @@ OUTPUT_NAME="SKILL.md"
 
 usage() {
   cat <<'USAGE'
-使い方: ./scripts/codex-skill-init.sh [options]
+使い方: aidev codex skill [options]
 
 オプション:
   --template <project|subproject>  使うテンプレート
@@ -25,8 +25,8 @@ usage() {
   -h, --help                        このヘルプを表示
 
 例:
-  ./scripts/codex-skill-init.sh --project --dest /path/to/repo
-  ./scripts/codex-skill-init.sh --subproject --dest ./apps/foo --output SKILL.md
+  aidev codex skill --project --dest /path/to/repo
+  aidev codex skill --subproject --dest ./apps/foo --output SKILL.md
 USAGE
 }
 

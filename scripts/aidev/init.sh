@@ -3,6 +3,7 @@ set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../.." && pwd)"
 TEMPLATE_ROOT="$REPO_DIR/templates"
+CODEX_TEMPLATE_ROOT="$REPO_DIR/codex/skills-templates"
 
 DRY_RUN=0
 FORCE=0
@@ -29,7 +30,7 @@ for arg in "$@"; do
 
 ターゲット（省略時はすべて）:
   claude      CLAUDE.md をプロジェクトルートに配置
-  codex       CODEX.md をプロジェクトルートに配置
+  codex       SKILL.md をプロジェクトルートに配置
   copilot     .github/copilot-instructions.md を配置
   agents      AGENTS.md を配置 + .gitignore に追記
 
@@ -108,8 +109,8 @@ init_claude() {
 }
 
 init_codex() {
-  place_file "$TEMPLATE_ROOT/CODEX.md" "$DEST_DIR/CODEX.md"
-  gitignore_add "CODEX.md"
+  place_file "$CODEX_TEMPLATE_ROOT/project/SKILL.md" "$DEST_DIR/SKILL.md"
+  gitignore_add "SKILL.md"
 }
 
 init_copilot() {

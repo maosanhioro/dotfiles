@@ -9,7 +9,7 @@ usage() {
 
 サブコマンド:
   init [claude|codex|copilot|agents]
-      プロジェクトの AI 環境をセットアップ（引数なしで全部）
+      プロジェクトの AI 環境をセットアップ（Codex は SKILL.md を配置）
 
   clean [claude|codex|copilot|agents]
       プロジェクトの AI ファイルを削除（引数なしで全部）
