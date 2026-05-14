@@ -1,0 +1,26 @@
+# OS / filesystem
+.DS_Store
+Thumbs.db
+
+# Editors
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Local env / scratch
+.env
+.env.*
+.tmp/
+tmp/
+
+# AI agent files generated locally in this repo
+CLAUDE.md
+SKILL.md
+AGENTS.md
+.github/copilot-instructions.md
