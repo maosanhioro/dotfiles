@@ -22,5 +22,5 @@ tmp/
 # AI agent files generated locally in this repo
 CLAUDE.md
 SKILL.md
-AGENTS.md
+/AGENT_HANDOFF_LOG.md
 .github/copilot-instructions.md

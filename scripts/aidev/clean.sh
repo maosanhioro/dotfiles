@@ -25,7 +25,7 @@ for arg in "$@"; do
   claude    CLAUDE.md を削除 + .gitignore から除去
   codex     SKILL.md を削除 + .gitignore から除去（旧 CODEX.md にも対応）
   copilot   .github/copilot-instructions.md を削除
-  agents    AGENTS.md を削除 + .gitignore から除去
+  agents    AGENT_HANDOFF_LOG.md を削除 + .gitignore から除去
 
 オプション:
   --dry-run   実行せずに内容だけ表示
@@ -109,8 +109,8 @@ clean_copilot() {
 }
 
 clean_agents() {
-  remove_file "$DEST_DIR/AGENTS.md"
-  gitignore_remove "AGENTS.md"
+  remove_file "$DEST_DIR/AGENT_HANDOFF_LOG.md"
+  gitignore_remove "AGENT_HANDOFF_LOG.md"
 }
 
 case "$TARGET" in

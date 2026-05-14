@@ -32,7 +32,7 @@ for arg in "$@"; do
   claude      CLAUDE.md をプロジェクトルートに配置
   codex       SKILL.md をプロジェクトルートに配置
   copilot     .github/copilot-instructions.md を配置
-  agents      AGENTS.md を配置 + .gitignore に追記
+  agents      AGENT_HANDOFF_LOG.md を配置 + .gitignore に追記
 
 プリセット:
   --personal  個人開発用（Codex CLI + Claude Code）: codex + claude + agents
@@ -119,8 +119,8 @@ init_copilot() {
 }
 
 init_agents() {
-  place_file "$TEMPLATE_ROOT/AGENTS.md" "$DEST_DIR/AGENTS.md"
-  gitignore_add "AGENTS.md"
+  place_file "$TEMPLATE_ROOT/AGENT_HANDOFF_LOG.md" "$DEST_DIR/AGENT_HANDOFF_LOG.md"
+  gitignore_add "AGENT_HANDOFF_LOG.md"
 }
 
 case "$TARGET" in
