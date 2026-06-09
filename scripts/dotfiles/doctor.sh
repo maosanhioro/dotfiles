@@ -54,12 +54,17 @@ check_cmd eza
 check_cmd pipx
 check_cmd claude
 check_cmd codex
+check_cmd gemini "Antigravity CLI (gemini)"
 
 bold "リンク"
 check_link "${HOME}/.gitconfig"
 check_link "${HOME}/.bashrc"
 check_link "${HOME}/.tmux.conf"
 check_link "${HOME}/.config/nvim"
+check_link "${HOME}/.claude/CLAUDE.md"
+check_link "${HOME}/.codex/AGENTS.md"
+check_link "${HOME}/.codex/config.toml"
+check_link "${HOME}/.gemini/GEMINI.md"
 check_file_or_link "${HOME}/.vscode-server/data/User/instructions/personal-dev-rules.instructions.md"
 
 if is_wsl && command -v cmd.exe >/dev/null 2>&1 && command -v wslpath >/dev/null 2>&1; then

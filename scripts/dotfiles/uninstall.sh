@@ -59,6 +59,9 @@ remove_link "$HOME/.config/nvim"
 # AI グローバル設定
 remove_link "$HOME/.agents/skills/dev"
 remove_link "$HOME/.claude/CLAUDE.md"
+remove_link "$HOME/.codex/AGENTS.md"
+remove_link "$HOME/.codex/config.toml"
+remove_link "$HOME/.gemini/GEMINI.md"
 remove_link "$HOME/.vscode-server/data/User/instructions/personal-dev-rules.instructions.md"
 
 echo ""

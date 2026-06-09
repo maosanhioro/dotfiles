@@ -13,10 +13,10 @@ TARGET="${1:-all}"
 # （例: `aidev init --force` → TARGET=all, `aidev init claude --force` → TARGET=claude）
 case "$TARGET" in
   --dry-run|--force|--help|-h) TARGET="all" ;;         # オプションのみ → TARGET=all で残す
-  all|claude|codex|copilot|agents|--personal|--work) shift || true ;;  # ターゲット/プリセット → 消費
+  all|claude|codex|copilot|agents|antigravity|--personal|--work) shift || true ;;  # ターゲット/プリセット → 消費
   *)
     echo "不明なターゲット: $TARGET"
-    echo "使い方: aidev init [claude|codex|copilot|agents|--personal|--work] [--force] [--dry-run]"
+    echo "使い方: aidev init [claude|codex|copilot|agents|antigravity|--personal|--work] [--force] [--dry-run]"
     exit 1
     ;;
 esac
@@ -30,13 +30,14 @@ for arg in "$@"; do
 使い方: aidev init [target] [options]
 
 ターゲット（省略時はすべて）:
-  claude      CLAUDE.md をプロジェクトルートに配置
-  codex       SKILL.md をプロジェクトルートに配置
-  copilot     .github/copilot-instructions.md を配置
-  agents      AGENT_HANDOFF_LOG.md を配置 + .gitignore に追記
+  claude        CLAUDE.md をプロジェクトルートに配置
+  codex         SKILL.md をプロジェクトルートに配置
+  copilot       .github/copilot-instructions.md を配置
+  agents        AGENT_HANDOFF_LOG.md を配置 + .gitignore に追記
+  antigravity   GEMINI.md をプロジェクトルートに配置
 
 プリセット:
-  --personal  個人開発用（Codex CLI + Claude Code）: codex + claude + agents
+  --personal  個人開発用（Codex CLI + Claude Code + Antigravity）: codex + claude + antigravity + agents
   --work      会社用（Copilot + Claude Code）: copilot + claude + agents
 
 オプション:
@@ -107,6 +108,12 @@ gitignore_add() {
 init_claude() {
   place_file "$TEMPLATE_ROOT/CLAUDE.md" "$DEST_DIR/CLAUDE.md"
   gitignore_add "CLAUDE.md"
+  gitignore_add "CLAUDE.local.md"
+}
+
+init_antigravity() {
+  place_file "$TEMPLATE_ROOT/GEMINI.md" "$DEST_DIR/GEMINI.md"
+  gitignore_add "GEMINI.md"
 }
 
 init_codex() {
@@ -129,16 +136,19 @@ case "$TARGET" in
     init_claude
     init_codex
     init_copilot
+    init_antigravity
     init_agents
     ;;
-  claude)     init_claude ;;
-  codex)      init_codex ;;
-  copilot)    init_copilot ;;
-  agents)     init_agents ;;
+  claude)       init_claude ;;
+  codex)        init_codex ;;
+  copilot)      init_copilot ;;
+  agents)       init_agents ;;
+  antigravity)  init_antigravity ;;
   --personal)
-    echo "プリセット: personal（Codex CLI + Claude Code）"
+    echo "プリセット: personal（Codex CLI + Claude Code + Antigravity）"
     init_codex
     init_claude
+    init_antigravity
     init_agents
     ;;
   --work)

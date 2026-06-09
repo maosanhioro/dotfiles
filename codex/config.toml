@@ -1,0 +1,3 @@
+# Codex CLI グローバル設定
+# プロジェクト固有の指示ファイルとして SKILL.md を読み込む
+project_doc_fallback_filenames = ["SKILL.md"]

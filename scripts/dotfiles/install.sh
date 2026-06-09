@@ -234,9 +234,23 @@ run ln -sfn "$REPO_DIR/codex/skills/dev" "$HOME/.agents/skills/dev"
 ############################################
 echo "Claude Code グローバル設定をリンク中"
 run mkdir -p "$HOME/.claude"
-run ln -sfn \
-  "$REPO_DIR/claude/CLAUDE.md" \
-  "$HOME/.claude/CLAUDE.md"
+run ln -sfn "$REPO_DIR/claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
+
+############################################
+# Codex CLI グローバル設定
+############################################
+echo "Codex CLI グローバル設定をリンク中"
+run mkdir -p "$HOME/.codex"
+run ln -sfn "$REPO_DIR/codex/AGENTS.md" "$HOME/.codex/AGENTS.md"
+run ln -sfn "$REPO_DIR/codex/config.toml" "$HOME/.codex/config.toml"
+
+############################################
+# Antigravity (Gemini CLI) グローバル設定
+# NOTE: Antigravity CLI の設定パスが変更された場合は要確認
+############################################
+echo "Antigravity グローバル設定をリンク中"
+run mkdir -p "$HOME/.gemini"
+run ln -sfn "$REPO_DIR/antigravity/GEMINI.md" "$HOME/.gemini/GEMINI.md"
 
 ############################################
 # VSCode Copilot Instructions（個人共通）

@@ -6,10 +6,10 @@ TARGET="${1:-all}"
 
 case "$TARGET" in
   --dry-run|--force|--help|-h) TARGET="all" ;;
-  all|claude|codex|copilot|agents) shift || true ;;
+  all|claude|codex|copilot|agents|antigravity) shift || true ;;
   *)
     echo "不明なターゲット: $TARGET"
-    echo "使い方: aidev clean [claude|codex|copilot|agents] [--dry-run]"
+    echo "使い方: aidev clean [claude|codex|copilot|agents|antigravity] [--dry-run]"
     exit 1
     ;;
 esac
@@ -22,10 +22,11 @@ for arg in "$@"; do
 使い方: aidev clean [target] [options]
 
 ターゲット（省略時はすべて）:
-  claude    CLAUDE.md を削除 + .gitignore から除去
-  codex     SKILL.md を削除 + .gitignore から除去（旧 CODEX.md にも対応）
-  copilot   .github/copilot-instructions.md を削除
-  agents    AGENT_HANDOFF_LOG.md を削除 + .gitignore から除去
+  claude        CLAUDE.md を削除 + .gitignore から除去
+  codex         SKILL.md を削除 + .gitignore から除去（旧 CODEX.md にも対応）
+  copilot       .github/copilot-instructions.md を削除
+  agents        AGENT_HANDOFF_LOG.md を削除 + .gitignore から除去
+  antigravity   GEMINI.md を削除 + .gitignore から除去
 
 オプション:
   --dry-run   実行せずに内容だけ表示
@@ -113,17 +114,24 @@ clean_agents() {
   gitignore_remove "AGENT_HANDOFF_LOG.md"
 }
 
+clean_antigravity() {
+  remove_file "$DEST_DIR/GEMINI.md"
+  gitignore_remove "GEMINI.md"
+}
+
 case "$TARGET" in
   all)
     clean_claude
     clean_codex
     clean_copilot
+    clean_antigravity
     clean_agents
     ;;
-  claude)  clean_claude ;;
-  codex)   clean_codex ;;
-  copilot) clean_copilot ;;
-  agents)  clean_agents ;;
+  claude)       clean_claude ;;
+  codex)        clean_codex ;;
+  copilot)      clean_copilot ;;
+  agents)       clean_agents ;;
+  antigravity)  clean_antigravity ;;
 esac
 
 echo ""
