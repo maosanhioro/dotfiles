@@ -1,8 +1,9 @@
 # dotfiles
 
-AI アシスト開発に最適化した個人 dotfiles。  
-tmux の作業レイアウト自動生成・Neovim LSP 環境・AI エージェントの設定一元管理を含む。  
-対象: WSL2 (Ubuntu) / Ubuntu Desktop / Windows ローカル VS Code。
+AI アシスト開発に最適化した個人 dotfiles。
+tmux 作業レイアウト自動生成・Neovim LSP 環境・AI エージェントのグローバル設定一元管理を含む。
+
+対象: WSL2 (Ubuntu) / Ubuntu Desktop / Windows ローカル VS Code
 
 ---
 
@@ -19,9 +20,10 @@ source ~/.bashrc
 ```
 
 以下を一括で行います:
+
 - 必要パッケージのインストール（tmux / nvim / rg / fd / fzf / bat / eza / pipx）
 - dotfiles のシンボリックリンクを張る（gitconfig / bashrc / tmux.conf / nvim）
-- AI グローバル設定のリンクを張る（`~/.claude/CLAUDE.md` / `~/.agents/skills/dev` / Copilot instructions）
+- AI グローバル設定のリンクを張る（Claude Code / Codex CLI / Antigravity CLI / Copilot）
 - `dotfiles` / `aidev` コマンドを `~/.local/bin/` に配置
 
 ### Windows ローカル VS Code（初回）
@@ -64,12 +66,12 @@ aidev init                # 全ファイルを配置
 aidev init claude         # CLAUDE.md を配置
 aidev init codex          # SKILL.md を配置
 aidev init copilot        # .github/copilot-instructions.md を配置
-aidev init agents         # AGENT_HANDOFF_LOG.md を配置
 aidev init antigravity    # .antigravity.md を配置
+aidev init agents         # AGENT_HANDOFF_LOG.md を配置
 
 # 削除（対応する .gitignore エントリも除去）
 aidev clean               # 全ファイルを削除
-aidev clean [claude|codex|copilot|agents]
+aidev clean [claude|codex|copilot|antigravity|agents]
 
 # Copilot team agents / skills テンプレートの配置
 aidev copilot team --dest /path/to/repo
@@ -80,10 +82,23 @@ aidev codex skill --project --dest /path/to/repo
 aidev codex skill --subproject --dest ./apps/foo
 ```
 
-`aidev init` は配置と同時に対象ファイルを `.gitignore` に追記します（べき等）。  
+`aidev init` は配置と同時に対象ファイルを `.gitignore` に追記します（べき等）。
 `--force` で既存ファイルを上書き、`--dry-run` で確認のみ。
 
-### tmux
+**Copilot Team Agents（チーム開発向け）**
+
+`aidev copilot team` で役割分担エージェントのテンプレートを配置します。
+
+| エージェント | 役割 |
+| --- | --- |
+| `planner` | 要件整理、作業分解、未確定事項の洗い出し |
+| `architect` | 設計判断、トレードオフ比較、移行方針の整理 |
+| `developer` | 最小差分の実装、検証、ドキュメント更新 |
+| `reviewer` | バグ、回帰、テスト不足、設計劣化の検出 |
+
+Skills: `project-intake` / `architecture-tradeoffs` / `implementation-safety` / `review-checklist`
+
+### tmux — AI セッション管理
 
 ```bash
 ta                        # 画面幅に応じてレイアウトを自動選択して起動
@@ -102,36 +117,32 @@ tmr                       # tmux 設定再読込
 ### グローバル設定（マシン全体・自動適用）
 
 `dotfiles install` 実行時にシンボリックリンクが張られ、即時有効になります。
-
-| エージェント | 自動適用 | 正本ファイル |
-| --- | --- | --- |
-| GitHub Copilot（VSCode） | ✅ `applyTo: '**'` | `vscode/instructions/personal-dev-rules.instructions.md` |
-| Claude Code（CLI / VSCode拡張） | ✅ セッション開始時に自動読込 | `claude/CLAUDE.md` |
-| Codex CLI | ✅ グローバル指示 + SKILL.md 自動認識 | `codex/AGENTS.md` / `codex/config.toml` / `codex/skills/dev/SKILL.md` |
-| Antigravity CLI（旧 Gemini CLI） | ✅ セッション開始時に自動読込 | `antigravity/GEMINI.md` |
-
 正本を編集すればシンボリックリンク経由で即時反映されます（再インストール不要）。
 
+| エージェント | リンク先 | 正本ファイル |
+| --- | --- | --- |
+| Claude Code（CLI / VSCode拡張） | `~/.claude/CLAUDE.md` | `claude/CLAUDE.md` |
+| Codex CLI | `~/.codex/AGENTS.md` / `~/.codex/config.toml` | `codex/AGENTS.md` / `codex/config.toml` |
+| Antigravity CLI（`agy`） | `~/.gemini/GEMINI.md` | `antigravity/GEMINI.md` |
+| GitHub Copilot（VSCode） | `~/.vscode-server/data/User/instructions/` | `vscode/instructions/personal-dev-rules.instructions.md` |
 
 ### プロジェクト設定（aidev init で配置）
 
 プロジェクトルートに配置するファイルは、グローバル設定の「プロジェクト固有の上書き・補足」として機能します。
-
-| ファイル | 対象 | 内容 |
-| --- | --- | --- |
-| `CLAUDE.md` | Claude Code | プロジェクト概要・固有ルール |
-| `SKILL.md` | Codex CLI | プロジェクト固有ルール |
-| `.antigravity.md` | Antigravity CLI | プロジェクト固有ルール |
-| `.github/copilot-instructions.md` | Copilot | プロジェクト固有ルール |
-| `AGENT_HANDOFF_LOG.md` | 全エージェント共通 | エージェント間引き継ぎログ |
-
 配置したファイルはすべて `.gitignore` に自動追記されます（個人設定のためコミット不要）。
 
-### AGENT_HANDOFF_LOG.md — エージェント間協調
+| ファイル | 対象 |
+| --- | --- |
+| `CLAUDE.md` | Claude Code |
+| `SKILL.md` | Codex CLI |
+| `.antigravity.md` | Antigravity CLI |
+| `.github/copilot-instructions.md` | GitHub Copilot |
+| `AGENT_HANDOFF_LOG.md` | 全エージェント共通（引き継ぎログ） |
 
-複数の AI エージェントが同一プロジェクトで作業する際の引き継ぎノートです。  
-各エージェントはアクション前に読み、変更後に書きます。
-`AGENTS.md` は Codex の指示ファイル名と衝突しうるため、この用途には使いません。
+### エージェント間協調（AGENT_HANDOFF_LOG.md）
+
+複数の AI エージェントが同一プロジェクトで作業する際の引き継ぎノートです。
+各エージェントはアクション前に末尾を読み、変更後に追記します。
 
 ```markdown
 ## [YYYY-MM-DD] {エージェント名} — {変更の概要}
@@ -142,18 +153,42 @@ tmr                       # tmux 設定再読込
 **Status**: pending | in_progress | done
 ```
 
-### Copilot Team Agents
+---
 
-チーム開発向けに役割分担エージェントのテンプレートを同梱しています。
+## ファイル構成
 
-| エージェント | 役割 |
-| --- | --- |
-| `planner` | 要件整理、作業分解、未確定事項の洗い出し |
-| `architect` | 設計判断、トレードオフ比較、移行方針の整理 |
-| `developer` | 最小差分の実装、検証、ドキュメント更新 |
-| `reviewer` | バグ、回帰、テスト不足、設計劣化の検出 |
-
-Skills: `project-intake` / `architecture-tradeoffs` / `implementation-safety` / `review-checklist`
+```
+dotfiles/
+├── bin/
+│   ├── dotfiles          # dotfiles install / uninstall / doctor
+│   └── aidev             # aidev init / clean / copilot team / codex skill
+├── scripts/
+│   ├── dotfiles/         # install / uninstall / doctor / install-windows
+│   └── aidev/            # init / clean / copilot-team / codex-skill
+├── templates/            # aidev init が配置するプロジェクトテンプレート
+│   ├── CLAUDE.md
+│   ├── antigravity.md
+│   ├── copilot-instructions.md
+│   └── AGENT_HANDOFF_LOG.md
+├── claude/
+│   └── CLAUDE.md         # Claude Code グローバル設定
+├── codex/
+│   ├── AGENTS.md         # Codex CLI グローバル指示
+│   ├── config.toml       # SKILL.md 自動認識設定
+│   ├── skills/dev/       # Codex CLI グローバルスキル
+│   └── skills-templates/ # プロジェクト配布テンプレート（SKILL.md）
+├── antigravity/
+│   └── GEMINI.md         # Antigravity CLI グローバル設定
+├── vscode/
+│   └── instructions/     # GitHub Copilot グローバル設定
+├── copilot/
+│   ├── agents-templates/ # Copilot team agents テンプレート
+│   └── skills-templates/ # Copilot team skills テンプレート
+├── bash/                 # bash 設定（共通 / WSL / Ubuntu）
+├── tmux/                 # tmux 設定（共通 / WSL / Ubuntu）
+├── nvim/                 # Neovim 設定
+└── git/                  # Git 設定
+```
 
 ---
 
@@ -181,7 +216,7 @@ Skills: `project-intake` / `architecture-tradeoffs` / `implementation-safety` / 
 
 - セッション名: `ai-assist` / ウィンドウ名: `ws`
 - SSH 接続時は自動で `ta` を起動
-- `normal` は `claude` / `gemini` を補助 window に作成
+- `normal` は `claude` / `agy` を補助 window に作成
 
 ### tmux キーバインド
 
@@ -199,45 +234,18 @@ Skills: `project-intake` / `architecture-tradeoffs` / `implementation-safety` / 
 
 ### Neovim キーマップ
 
-**ファイル操作・検索**
-
 | キー | 動作 |
 | --- | --- |
-| `Space w` | 保存 |
-| `Space q` | 終了 |
+| `Space w` / `Space q` | 保存 / 終了 |
 | `-` | ファイルエクスプローラ（oil） |
-| `Space ff` | ファイル検索 |
-| `Space fg` | Ripgrep 検索 |
-| `Space fb` | バッファ一覧 |
-
-**LSP**
-
-| キー | 動作 |
-| --- | --- |
-| `K` | hover |
-| `gd` | 定義へ移動 |
-| `gr` | 参照一覧 |
-| `Space rn` | リネーム |
-| `Space ca` | コードアクション |
-| `Space f` | フォーマット |
-| `Space e` | 行診断を表示 |
+| `Space ff` / `fg` / `fb` | ファイル / Ripgrep / バッファ 検索 |
+| `K` | hover（LSP） |
+| `gd` / `gr` | 定義へ移動 / 参照一覧 |
+| `Space rn` / `ca` / `f` / `e` | リネーム / コードアクション / フォーマット / 行診断 |
 | `Space xx` | Trouble トグル |
-
-**Git（gitsigns）**
-
-| キー | 動作 |
-| --- | --- |
-| `[h` / `]h` | hunk の前後移動 |
-| `Space hs` | hunk を stage |
-| `Space hr` | hunk を reset |
-| `Space hb` | 行の blame |
-
-**セッション**
-
-| キー | 動作 |
-| --- | --- |
-| `Space qs` | セッション復元 |
-| `Space ql` | 直近セッション復元 |
+| `[h` / `]h` | Git hunk の前後移動 |
+| `Space hs` / `hr` / `hb` | hunk stage / reset / blame |
+| `Space qs` / `ql` | セッション復元 / 直近復元 |
 
 ### Bash エイリアス
 
@@ -259,41 +267,4 @@ gaa / gcm            # add -A / commit -m
 # その他
 extract <file>       # アーカイブ展開
 path                 # PATH を1行ずつ表示
-```
-
----
-
-## ファイル構成
-
-```
-dotfiles/
-├── bin/
-│   ├── dotfiles          # dotfiles install / uninstall / doctor
-│   └── aidev             # aidev init / clean / copilot team / codex skill
-├── scripts/
-│   ├── dotfiles/         # dotfiles サブコマンドの実装（install / uninstall / doctor / install-windows）
-│   └── aidev/            # aidev サブコマンドの実装（init / clean / copilot-team / codex-skill）
-├── templates/            # aidev init が配置するプロジェクトテンプレート
-│   ├── CLAUDE.md
-│   ├── GEMINI.md
-│   ├── copilot-instructions.md
-│   └── AGENT_HANDOFF_LOG.md
-├── claude/
-│   └── CLAUDE.md         # Claude Code グローバル設定の正本
-├── codex/
-│   ├── AGENTS.md         # Codex CLI グローバル指示の正本
-│   ├── config.toml       # Codex CLI 設定（SKILL.md 自動認識）
-│   ├── skills/dev/       # Codex CLI グローバルスキルの正本
-│   └── skills-templates/ # Codex プロジェクト配布テンプレート（SKILL.md）
-├── antigravity/
-│   └── GEMINI.md         # Antigravity CLI グローバル設定の正本
-├── vscode/
-│   └── instructions/     # Copilot グローバル設定の正本
-├── copilot/
-│   ├── agents-templates/ # Copilot team agents テンプレート
-│   └── skills-templates/ # Copilot team skills テンプレート
-├── bash/                 # bash 設定（共通 / WSL / Ubuntu）
-├── tmux/                 # tmux 設定（共通 / WSL / Ubuntu）
-├── nvim/                 # Neovim 設定
-└── git/                  # Git 設定
 ```
