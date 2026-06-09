@@ -112,7 +112,6 @@ tmr                       # tmux 設定再読込
 
 正本を編集すればシンボリックリンク経由で即時反映されます（再インストール不要）。
 
-> **Note**: Antigravity CLI の設定パスは現在 `~/.gemini/GEMINI.md` を使用。CLI リリース後にパスが変わった場合は `install.sh` の該当箇所を更新してください。
 
 ### プロジェクト設定（aidev init で配置）
 

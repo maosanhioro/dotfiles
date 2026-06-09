@@ -246,7 +246,6 @@ run ln -sfn "$REPO_DIR/codex/config.toml" "$HOME/.codex/config.toml"
 
 ############################################
 # Antigravity CLI グローバル設定（コマンド: agy）
-# NOTE: 設定パス ~/.gemini/GEMINI.md はリリース版で要確認
 ############################################
 echo "Antigravity グローバル設定をリンク中"
 run mkdir -p "$HOME/.gemini"
