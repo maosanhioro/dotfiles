@@ -1,4 +1,4 @@
-# Antigravity (Gemini CLI) プロジェクト設定
+# Antigravity CLI プロジェクト設定
 
 このファイルはプロジェクト固有の Antigravity CLI ルールを定義します。
 `~/.gemini/GEMINI.md` のグローバル設定を上書き・補足できます。

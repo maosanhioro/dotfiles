@@ -26,7 +26,7 @@ for arg in "$@"; do
   codex         SKILL.md を削除 + .gitignore から除去（旧 CODEX.md にも対応）
   copilot       .github/copilot-instructions.md を削除
   agents        AGENT_HANDOFF_LOG.md を削除 + .gitignore から除去
-  antigravity   GEMINI.md を削除 + .gitignore から除去
+  antigravity   .antigravity.md を削除 + .gitignore から除去（旧 GEMINI.md にも対応）
 
 オプション:
   --dry-run   実行せずに内容だけ表示
@@ -115,6 +115,9 @@ clean_agents() {
 }
 
 clean_antigravity() {
+  remove_file "$DEST_DIR/.antigravity.md"
+  gitignore_remove ".antigravity.md"
+  # 旧形式の GEMINI.md も対応
   remove_file "$DEST_DIR/GEMINI.md"
   gitignore_remove "GEMINI.md"
 }

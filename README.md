@@ -65,7 +65,7 @@ aidev init claude         # CLAUDE.md を配置
 aidev init codex          # SKILL.md を配置
 aidev init copilot        # .github/copilot-instructions.md を配置
 aidev init agents         # AGENT_HANDOFF_LOG.md を配置
-aidev init antigravity    # GEMINI.md を配置
+aidev init antigravity    # .antigravity.md を配置
 
 # 削除（対応する .gitignore エントリも除去）
 aidev clean               # 全ファイルを削除
@@ -121,7 +121,7 @@ tmr                       # tmux 設定再読込
 | --- | --- | --- |
 | `CLAUDE.md` | Claude Code | プロジェクト概要・固有ルール |
 | `SKILL.md` | Codex CLI | プロジェクト固有ルール |
-| `GEMINI.md` | Antigravity CLI | プロジェクト固有ルール |
+| `.antigravity.md` | Antigravity CLI | プロジェクト固有ルール |
 | `.github/copilot-instructions.md` | Copilot | プロジェクト固有ルール |
 | `AGENT_HANDOFF_LOG.md` | 全エージェント共通 | エージェント間引き継ぎログ |
 

@@ -34,7 +34,7 @@ for arg in "$@"; do
   codex         SKILL.md をプロジェクトルートに配置
   copilot       .github/copilot-instructions.md を配置
   agents        AGENT_HANDOFF_LOG.md を配置 + .gitignore に追記
-  antigravity   GEMINI.md をプロジェクトルートに配置
+  antigravity   .antigravity.md をプロジェクトルートに配置
 
 プリセット:
   --personal  個人開発用（Codex CLI + Claude Code + Antigravity）: codex + claude + antigravity + agents
@@ -112,8 +112,8 @@ init_claude() {
 }
 
 init_antigravity() {
-  place_file "$TEMPLATE_ROOT/GEMINI.md" "$DEST_DIR/GEMINI.md"
-  gitignore_add "GEMINI.md"
+  place_file "$TEMPLATE_ROOT/antigravity.md" "$DEST_DIR/.antigravity.md"
+  gitignore_add ".antigravity.md"
 }
 
 init_codex() {
