@@ -205,6 +205,8 @@ run ln -sfn "$REPO_DIR/bash/bashrc.common" "$HOME/.bashrc"
 ############################################
 echo "~/.tmux.conf をリンク中"
 run ln -sfn "$REPO_DIR/tmux/tmux.common.conf" "$HOME/.tmux.conf"
+run ln -sfn "$REPO_DIR/tmux/tmux.wsl.conf" "$HOME/.tmux.wsl.conf"
+run ln -sfn "$REPO_DIR/tmux/tmux.ubuntu.conf" "$HOME/.tmux.ubuntu.conf"
 
 ############################################
 # Neovim 設定の配置

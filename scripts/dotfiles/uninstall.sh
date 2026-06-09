@@ -52,6 +52,8 @@ echo "== dotfiles リンクを解除 =="
 remove_link "$HOME/.gitconfig"
 remove_link "$HOME/.bashrc"
 remove_link "$HOME/.tmux.conf"
+remove_link "$HOME/.tmux.wsl.conf"
+remove_link "$HOME/.tmux.ubuntu.conf"
 remove_link "$HOME/.config/nvim"
 
 # AI グローバル設定
