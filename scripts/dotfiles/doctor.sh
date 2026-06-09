@@ -54,7 +54,7 @@ check_cmd eza
 check_cmd pipx
 check_cmd claude
 check_cmd codex
-check_cmd gemini "Antigravity CLI (gemini)"
+check_cmd agy "Antigravity CLI (agy)"
 
 bold "リンク"
 check_link "${HOME}/.gitconfig"
