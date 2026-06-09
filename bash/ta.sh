@@ -1,0 +1,357 @@
+#!/usr/bin/env bash
+# tmux AI アシスト作業セッション管理
+# bashrc.common から source される
+
+ta() {
+  local S="ai-assist"
+  local W="ws"
+  local TA_DEBUG="${TA_DEBUG:-}"
+  local TA_INTERNAL="${TA_INTERNAL:-}"
+  local TA_CWD="${TA_CWD:-$PWD}"
+  local TA_COLS TA_LINES
+  local requested_layout="${TA_LAYOUT:-}"
+  local requested_agent="${TA_AGENT:-}"
+  local effective_layout=""
+  local effective_agent=""
+
+  command -v tmux >/dev/null 2>&1 || { echo "tmux not found"; return 1; }
+
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --layout)
+        shift
+        [ "$#" -gt 0 ] || { echo "ta: --layout requires a value"; return 1; }
+        requested_layout="$1"
+        ;;
+      --layout=*)
+        requested_layout="${1#*=}"
+        ;;
+      --agent)
+        shift
+        [ "$#" -gt 0 ] || { echo "ta: --agent requires a value"; return 1; }
+        requested_agent="$1"
+        ;;
+      --agent=*)
+        requested_agent="${1#*=}"
+        ;;
+      *)
+        echo "ta: unknown argument: $1"
+        return 1
+        ;;
+    esac
+    shift
+  done
+
+  case "${requested_layout}" in
+    ""|normal|compact) ;;
+    *)
+      echo "ta: invalid layout: ${requested_layout}"
+      return 1
+      ;;
+  esac
+
+  case "${requested_agent}" in
+    ""|copilot|codex|claude|gemini) ;;
+    *)
+      echo "ta: invalid agent: ${requested_agent}"
+      return 1
+      ;;
+  esac
+
+  _ta_dbg() {
+    [ -n "${TA_DEBUG}" ] && printf '[ta] %s\n' "$*" >&2
+  }
+
+  _ta_run() {
+    if [ -n "${TA_DEBUG}" ]; then
+      printf '[ta] $ %s\n' "$*" >&2
+    fi
+    "$@"
+  }
+
+  _ta_dims() {
+    if [ -n "${TMUX}" ] && command -v tmux >/dev/null 2>&1; then
+      TA_COLS="$(tmux display-message -p -t "${TMUX_PANE}" '#{client_width}' 2>/dev/null)"
+      TA_LINES="$(tmux display-message -p -t "${TMUX_PANE}" '#{client_height}' 2>/dev/null)"
+    else
+      TA_COLS="$(tput cols 2>/dev/null)"
+      TA_LINES="$(tput lines 2>/dev/null)"
+    fi
+    case "${TA_COLS}" in ''|*[!0-9]*) TA_COLS=120;; esac
+    case "${TA_LINES}" in ''|*[!0-9]*) TA_LINES=40;; esac
+    _ta_dbg "dims=${TA_COLS}x${TA_LINES}"
+  }
+
+  _ta_pick_layout() {
+    if [ -n "${requested_layout}" ]; then
+      effective_layout="${requested_layout}"
+    elif [ "${TA_COLS}" -ge 160 ]; then
+      effective_layout="normal"
+    else
+      effective_layout="compact"
+    fi
+    if [ -n "${requested_agent}" ]; then
+      effective_agent="${requested_agent}"
+    else
+      effective_agent="codex"
+    fi
+    _ta_dbg "layout=${effective_layout}"
+    _ta_dbg "agent=${effective_agent}"
+  }
+
+  _ta_window_exists() {
+    tmux list-windows -t "$1" -F '#{window_name}' 2>/dev/null | grep -qx "$2"
+  }
+
+  _ta_recreate_window() {
+    local s="$1" w="$2"
+    _ta_run tmux kill-window -t "${s}:${w}" 2>/dev/null || true
+    _ta_run tmux new-window -t "${s}" -n "${w}" -d -c "${TA_CWD}"
+  }
+
+  _ta_send_cmd() {
+    local pane="$1" cmd="$2"
+    [ -n "${pane}" ] && [ -n "${cmd}" ] && _ta_run tmux send-keys -t "${pane}" "${cmd}" C-m
+  }
+
+  _ta_set_title() {
+    local pane="$1" title="$2"
+    [ -n "${pane}" ] && [ -n "${title}" ] && _ta_run tmux select-pane -t "${pane}" -T "${title}"
+  }
+
+  _ta_mark_layout() {
+    local target="$1" layout="$2"
+    _ta_run tmux set-window-option -t "${target}" @ta_layout "${layout}" >/dev/null
+  }
+
+  _ta_window_layout() {
+    tmux show-window-options -v -t "$1" @ta_layout 2>/dev/null
+  }
+
+  _ta_mark_agent() {
+    local target="$1" agent="$2"
+    _ta_run tmux set-window-option -t "${target}" @ta_agent "${agent}" >/dev/null
+  }
+
+  _ta_window_agent() {
+    tmux show-window-options -v -t "$1" @ta_agent 2>/dev/null
+  }
+
+  _ta_pane_count() {
+    tmux list-panes -t "$1" 2>/dev/null | wc -l | tr -d ' '
+  }
+
+  _ta_recreate_tool_window() {
+    local s="$1" w="$2" cmd="$3"
+    _ta_recreate_window "${s}" "${w}"
+    local pane
+    pane="$(tmux list-panes -t "${s}:${w}" -F '#{pane_id}' | head -n 1)"
+    [ -n "${pane}" ] || return 1
+    _ta_send_cmd "${pane}" "${cmd}"
+    _ta_set_title "${pane}" "${w}"
+  }
+
+  _ta_ensure_tool_window() {
+    local s="$1" w="$2" cmd="$3"
+    if ! _ta_window_exists "${s}" "${w}"; then
+      _ta_recreate_tool_window "${s}" "${w}" "${cmd}"
+      return
+    fi
+    local pane_count
+    pane_count="$(_ta_pane_count "${s}:${w}")"
+    if [ -z "${pane_count}" ] || [ "${pane_count}" -ne 1 ]; then
+      _ta_recreate_tool_window "${s}" "${w}" "${cmd}"
+    fi
+  }
+
+  _ta_split_v_pct() {
+    local pane="$1" bottom_pct="$2" fallback_lines="$3"
+    local h bottom
+    h="$(tmux display-message -p -t "${pane}" '#{pane_height}' 2>/dev/null)"
+    case "${h}" in ''|*[!0-9]*) h="${fallback_lines}";; esac
+    bottom=$(( h * bottom_pct / 100 ))
+    [ "${bottom}" -lt 1 ] && bottom=1
+    [ "${bottom}" -ge "${h}" ] && bottom=$(( h / 2 ))
+    _ta_run tmux split-window -v -l "${bottom}" -t "${pane}"
+  }
+
+  _ta_resize_column() {
+    local target="$1" left_x="$2" bottom_pct="$3"
+    local rows total bottom top_pane bottom_pane cur delta
+    rows="$(tmux list-panes -t "${target}" -F '#{pane_id} #{pane_left} #{pane_top} #{pane_height}' \
+      | awk -v x="${left_x}" '$2==x {print $0}' | sort -n -k3)"
+    top_pane="$(printf '%s\n' "${rows}" | sed -n '1p' | awk '{print $1}')"
+    bottom_pane="$(printf '%s\n' "${rows}" | sed -n '2p' | awk '{print $1}')"
+    [ -n "${top_pane}" ] || return
+    [ -n "${bottom_pane}" ] || return
+    total="$(printf '%s\n' "${rows}" | awk '{sum+=$4} END {print sum}')"
+    case "${total}" in ''|*[!0-9]*) return;; esac
+    bottom=$(( total * bottom_pct / 100 ))
+    [ "${bottom}" -lt 1 ] && bottom=1
+    [ "${bottom}" -ge "${total}" ] && bottom=$(( total / 2 ))
+    cur="$(tmux display-message -p -t "${bottom_pane}" '#{pane_height}' 2>/dev/null)"
+    case "${cur}" in ''|*[!0-9]*) return;; esac
+    delta=$(( cur - bottom ))
+    if [ "${delta}" -gt 0 ]; then
+      _ta_run tmux resize-pane -U "${delta}" -t "${bottom_pane}"
+    elif [ "${delta}" -lt 0 ]; then
+      _ta_run tmux resize-pane -D "$(( -delta ))" -t "${bottom_pane}"
+    fi
+  }
+
+  _ta_build_normal_layout() {
+    local s="$1" w="$2"
+    local target="${s}:${w}" root_pane left_pane right_pane
+    local total_cols left_w pane_cols rows lefts left1 left2 A B C D
+
+    _ta_recreate_window "${s}" "${w}"
+    root_pane="$(tmux list-panes -t "${target}" -F '#{pane_id}' | head -n 1)"
+    [ -n "${root_pane}" ] || { echo "ta: failed to create window"; return 1; }
+
+    total_cols="$(tmux display-message -p -t "${target}" '#{window_width}' 2>/dev/null)"
+    case "${total_cols}" in ''|*[!0-9]*) total_cols="${TA_COLS}";; esac
+    left_w=$(( total_cols * 50 / 100 ))
+    [ "${left_w}" -lt 1 ] && left_w=1
+
+    _ta_run tmux split-window -h -l "$(( total_cols - left_w ))" -t "${root_pane}"
+    pane_cols="$(tmux list-panes -t "${target}" -F '#{pane_id} #{pane_left}' | sort -n -k2)"
+    left_pane="$(printf '%s\n' "${pane_cols}" | sed -n '1p' | awk '{print $1}')"
+    right_pane="$(printf '%s\n' "${pane_cols}" | sed -n '2p' | awk '{print $1}')"
+    [ -n "${left_pane}" ] && _ta_split_v_pct "${left_pane}" 20 "${TA_LINES}"
+    [ -n "${right_pane}" ] && _ta_split_v_pct "${right_pane}" 20 "${TA_LINES}"
+
+    rows="$(tmux list-panes -t "${target}" -F '#{pane_id} #{pane_left} #{pane_top}')"
+    lefts="$(printf '%s\n' "${rows}" | awk '{print $2}' | sort -n | uniq)"
+    left1="$(printf '%s\n' "${lefts}" | sed -n '1p')"
+    left2="$(printf '%s\n' "${lefts}" | sed -n '2p')"
+    A="$(printf '%s\n' "${rows}" | awk -v x="${left1}" '$2==x {print $0}' | sort -n -k3 | sed -n '1p' | awk '{print $1}')"
+    B="$(printf '%s\n' "${rows}" | awk -v x="${left1}" '$2==x {print $0}' | sort -n -k3 | sed -n '2p' | awk '{print $1}')"
+    C="$(printf '%s\n' "${rows}" | awk -v x="${left2}" '$2==x {print $0}' | sort -n -k3 | sed -n '1p' | awk '{print $1}')"
+    D="$(printf '%s\n' "${rows}" | awk -v x="${left2}" '$2==x {print $0}' | sort -n -k3 | sed -n '2p' | awk '{print $1}')"
+
+    _ta_send_cmd "${A}" "${effective_agent}"
+    _ta_send_cmd "${C}" "nvim"
+    _ta_set_title "${A}" "${effective_agent}"
+    _ta_set_title "${B}" "shell"
+    _ta_set_title "${C}" "nvim"
+    _ta_set_title "${D}" "test/build"
+    [ -n "${C}" ] && _ta_run tmux select-pane -t "${C}"
+    _ta_mark_layout "${target}" "normal"
+    _ta_mark_agent "${target}" "${effective_agent}"
+
+    _ta_ensure_tool_window "${s}" "claude" "claude"
+    _ta_ensure_tool_window "${s}" "gemini" "gemini"
+  }
+
+  _ta_build_compact_layout() {
+    local s="$1" w="$2"
+    local target="${s}:${w}" root_pane rows A B
+
+    _ta_recreate_window "${s}" "${w}"
+    root_pane="$(tmux list-panes -t "${target}" -F '#{pane_id}' | head -n 1)"
+    [ -n "${root_pane}" ] || { echo "ta: failed to create window"; return 1; }
+
+    _ta_split_v_pct "${root_pane}" 20 "${TA_LINES}"
+
+    rows="$(tmux list-panes -t "${target}" -F '#{pane_id} #{pane_top}' | sort -n -k2)"
+    A="$(printf '%s\n' "${rows}" | sed -n '1p' | awk '{print $1}')"
+    B="$(printf '%s\n' "${rows}" | sed -n '2p' | awk '{print $1}')"
+
+    _ta_send_cmd "${A}" "${effective_agent}"
+    _ta_set_title "${A}" "${effective_agent}"
+    _ta_set_title "${B}" "shell"
+    [ -n "${A}" ] && _ta_run tmux select-pane -t "${A}"
+    _ta_mark_layout "${target}" "compact"
+    _ta_mark_agent "${target}" "${effective_agent}"
+
+    _ta_ensure_tool_window "${s}" "codex" "codex"
+    _ta_ensure_tool_window "${s}" "claude" "claude"
+    _ta_ensure_tool_window "${s}" "gemini" "gemini"
+  }
+
+  _ta_expected_panes() {
+    case "$1" in
+      normal) echo 4 ;;
+      compact) echo 2 ;;
+      *) echo 0 ;;
+    esac
+  }
+
+  _ta_build_layout() {
+    local s="$1" w="$2" layout="$3"
+    case "${layout}" in
+      normal) _ta_build_normal_layout "${s}" "${w}" ;;
+      compact) _ta_build_compact_layout "${s}" "${w}" ;;
+      *)
+        echo "ta: unsupported layout: ${layout}"
+        return 1
+        ;;
+    esac
+  }
+
+  _ta_dims
+  _ta_pick_layout
+  if [ -z "${TMUX}" ] && [ -z "${TA_INTERNAL}" ]; then
+    if ! tmux has-session -t "${S}" 2>/dev/null; then
+      _ta_run tmux new-session -d -s "${S}" -n "main" -c "${TA_CWD}"
+    fi
+    TA_INTERNAL=1 TA_CWD="${TA_CWD}" TA_LAYOUT="${effective_layout}" TA_AGENT="${effective_agent}" ta
+    _ta_run tmux attach-session -t "${S}"
+    return
+  fi
+
+  if ! tmux has-session -t "${S}" 2>/dev/null; then
+    _ta_run tmux new-session -d -s "${S}" -n "main" -c "${TA_CWD}"
+    _ta_build_layout "${S}" "${W}" "${effective_layout}"
+  else
+    if ! tmux list-windows -t "${S}" -F '#{window_name}' 2>/dev/null | grep -qx "${W}"; then
+      _ta_build_layout "${S}" "${W}" "${effective_layout}"
+    else
+      local pane_count current_layout current_agent expected_panes
+      pane_count="$(_ta_pane_count "${S}:${W}")"
+      current_layout="$(_ta_window_layout "${S}:${W}")"
+      current_agent="$(_ta_window_agent "${S}:${W}")"
+      expected_panes="$(_ta_expected_panes "${effective_layout}")"
+      if [ -z "${pane_count}" ] || [ "${pane_count}" -ne "${expected_panes}" ] || [ "${current_layout}" != "${effective_layout}" ] || { [ "${effective_layout}" = "compact" ] && [ "${current_agent}" != "${effective_agent}" ]; } || { [ "${effective_layout}" = "normal" ] && [ "${current_agent}" != "${effective_agent}" ]; }; then
+        _ta_build_layout "${S}" "${W}" "${effective_layout}"
+      fi
+    fi
+  fi
+
+  # Select the target window before attaching/switching
+  _ta_run tmux select-window -t "${S}:${W}"
+
+  if [ -n "${TMUX}" ]; then
+    _ta_run tmux switch-client -t "${S}"
+  fi
+}
+
+tl() { tmux ls; }
+
+tan() {
+  if [ "$#" -gt 1 ]; then
+    echo "tan: usage: tan [copilot|codex|claude|gemini]"
+    return 1
+  fi
+  if [ "$#" -eq 1 ]; then
+    ta --layout normal --agent "$1"
+  else
+    ta --layout normal
+  fi
+}
+
+tacc() {
+  if [ "$#" -gt 1 ]; then
+    echo "tacc: usage: tacc [copilot|codex|claude|gemini]"
+    return 1
+  fi
+  if [ "$#" -eq 1 ]; then
+    ta --layout compact --agent "$1"
+  else
+    ta --layout compact
+  fi
+}
+
+tk() { tmux kill-session -t ai-assist 2>/dev/null || true; }
+treset() { tmux kill-server 2>/dev/null || true; }
+tmr() { tmux source-file ~/.tmux.conf 2>/dev/null || true; }

@@ -87,7 +87,7 @@ aidev codex skill --subproject --dest ./apps/foo
 ```bash
 ta                        # 画面幅に応じてレイアウトを自動選択して起動
 ta --layout normal        # レイアウトを明示指定
-tan / tac                 # normal / compact のショートカット
+tan / tacc                # normal / compact のショートカット
 ta --agent claude         # 使用するエージェントを指定
 tl                        # セッション一覧
 tk                        # ai-assist セッション終了

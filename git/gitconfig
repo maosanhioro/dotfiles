@@ -19,6 +19,10 @@
 [rerere]
   enabled = true
 
+[push]
+  default = current
+  autoSetupRemote = true
+
 [alias]
   sw = switch
   swc = switch -c

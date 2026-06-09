@@ -9,10 +9,11 @@ DRY_RUN=0
 FORCE=0
 TARGET="${1:-all}"
 
-# 第1引数がオプションフラグの場合は TARGET を all にする
+# 第1引数がターゲット名またはプリセット名なら消費し、オプションフラグなら TARGET を all のまま残す
+# （例: `aidev init --force` → TARGET=all, `aidev init claude --force` → TARGET=claude）
 case "$TARGET" in
-  --dry-run|--force|--help|-h) TARGET="all" ;;
-  all|claude|codex|copilot|agents|--personal|--work) shift || true ;;
+  --dry-run|--force|--help|-h) TARGET="all" ;;         # オプションのみ → TARGET=all で残す
+  all|claude|codex|copilot|agents|--personal|--work) shift || true ;;  # ターゲット/プリセット → 消費
   *)
     echo "不明なターゲット: $TARGET"
     echo "使い方: aidev init [claude|codex|copilot|agents|--personal|--work] [--force] [--dry-run]"
