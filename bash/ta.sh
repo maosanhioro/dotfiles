@@ -51,7 +51,7 @@ ta() {
   esac
 
   case "${requested_agent}" in
-    ""|copilot|codex|claude|gemini) ;;
+    ""|copilot|codex|claude|agy) ;;
     *)
       echo "ta: invalid agent: ${requested_agent}"
       return 1
@@ -240,7 +240,7 @@ ta() {
     _ta_mark_agent "${target}" "${effective_agent}"
 
     _ta_ensure_tool_window "${s}" "claude" "claude"
-    _ta_ensure_tool_window "${s}" "gemini" "gemini"
+    _ta_ensure_tool_window "${s}" "agy" "agy"
   }
 
   _ta_build_compact_layout() {
@@ -266,7 +266,7 @@ ta() {
 
     _ta_ensure_tool_window "${s}" "codex" "codex"
     _ta_ensure_tool_window "${s}" "claude" "claude"
-    _ta_ensure_tool_window "${s}" "gemini" "gemini"
+    _ta_ensure_tool_window "${s}" "agy" "agy"
   }
 
   _ta_expected_panes() {
@@ -330,7 +330,7 @@ tl() { tmux ls; }
 
 tan() {
   if [ "$#" -gt 1 ]; then
-    echo "tan: usage: tan [copilot|codex|claude|gemini]"
+    echo "tan: usage: tan [copilot|codex|claude|agy]"
     return 1
   fi
   if [ "$#" -eq 1 ]; then
@@ -342,7 +342,7 @@ tan() {
 
 tacc() {
   if [ "$#" -gt 1 ]; then
-    echo "tacc: usage: tacc [copilot|codex|claude|gemini]"
+    echo "tacc: usage: tacc [copilot|codex|claude|agy]"
     return 1
   fi
   if [ "$#" -eq 1 ]; then

@@ -104,11 +104,13 @@ Skills: `project-intake` / `architecture-tradeoffs` / `implementation-safety` / 
 ta                        # 画面幅に応じてレイアウトを自動選択して起動
 ta --layout normal        # レイアウトを明示指定
 tan / tacc                # normal / compact のショートカット
-ta --agent claude         # 使用するエージェントを指定
+ta --agent agy            # 使用するエージェントを指定
 tl                        # セッション一覧
 tk                        # ai-assist セッション終了
 tmr                       # tmux 設定再読込
 ```
+
+`--agent` は `copilot` / `codex` / `claude` / `agy` を指定できます。
 
 ---
 
@@ -217,6 +219,7 @@ dotfiles/
 - セッション名: `ai-assist` / ウィンドウ名: `ws`
 - SSH 接続時は自動で `ta` を起動
 - `normal` は `claude` / `agy` を補助 window に作成
+- `compact` は `codex` / `claude` / `agy` を補助 window に作成
 
 ### tmux キーバインド
 
