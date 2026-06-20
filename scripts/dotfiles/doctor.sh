@@ -39,6 +39,17 @@ check_file_or_link() {
   fi
 }
 
+check_regular_file() {
+  local path="$1"
+  if [ -L "${path}" ]; then
+    warn "${path} はシンボリックリンクです（ローカル状態を保持するため通常ファイル推奨）"
+  elif [ -f "${path}" ]; then
+    ok "${path} (regular file)"
+  else
+    warn "${path} が見つかりません"
+  fi
+}
+
 is_wsl() {
   grep -qi microsoft /proc/version 2>/dev/null
 }
@@ -63,7 +74,7 @@ check_link "${HOME}/.tmux.conf"
 check_link "${HOME}/.config/nvim"
 check_link "${HOME}/.claude/CLAUDE.md"
 check_link "${HOME}/.codex/AGENTS.md"
-check_link "${HOME}/.codex/config.toml"
+check_regular_file "${HOME}/.codex/config.toml"
 check_link "${HOME}/.gemini/GEMINI.md"
 check_file_or_link "${HOME}/.vscode-server/data/User/instructions/personal-dev-rules.instructions.md"
 

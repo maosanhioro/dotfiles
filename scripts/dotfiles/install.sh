@@ -242,7 +242,25 @@ run ln -sfn "$REPO_DIR/claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
 echo "Codex CLI グローバル設定をリンク中"
 run mkdir -p "$HOME/.codex"
 run ln -sfn "$REPO_DIR/codex/AGENTS.md" "$HOME/.codex/AGENTS.md"
-run ln -sfn "$REPO_DIR/codex/config.toml" "$HOME/.codex/config.toml"
+CODEX_CONFIG="$HOME/.codex/config.toml"
+CODEX_CONFIG_TEMPLATE="$REPO_DIR/codex/config.toml"
+if [ -L "$CODEX_CONFIG" ]; then
+  current_target="$(readlink -f "$CODEX_CONFIG" 2>/dev/null || true)"
+  if [ "$current_target" = "$CODEX_CONFIG_TEMPLATE" ]; then
+    echo "~/.codex/config.toml を実ファイルへ移行中（project trust 設定をローカルに保持するため）"
+    run rm "$CODEX_CONFIG"
+    run install -m 600 "$CODEX_CONFIG_TEMPLATE" "$CODEX_CONFIG"
+  else
+    echo "~/.codex/config.toml は別のリンクのため保持: $CODEX_CONFIG -> $(readlink "$CODEX_CONFIG")"
+  fi
+elif [ -f "$CODEX_CONFIG" ]; then
+  echo "~/.codex/config.toml は既存のローカル実ファイルを保持"
+elif [ -e "$CODEX_CONFIG" ]; then
+  echo "~/.codex/config.toml は通常ファイルではないためスキップ"
+else
+  echo "~/.codex/config.toml をテンプレートから作成"
+  run install -m 600 "$CODEX_CONFIG_TEMPLATE" "$CODEX_CONFIG"
+fi
 
 ############################################
 # Antigravity CLI グローバル設定（コマンド: agy）

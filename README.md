@@ -118,13 +118,15 @@ tmr                       # tmux 設定再読込
 
 ### グローバル設定（マシン全体・自動適用）
 
-`dotfiles install` 実行時にシンボリックリンクが張られ、即時有効になります。
+`dotfiles install` 実行時にシンボリックリンク、またはローカル設定ファイルが配置されます。
 正本を編集すればシンボリックリンク経由で即時反映されます（再インストール不要）。
+
+`~/.codex/config.toml` は Codex が project trust などのマシン固有状態を保存するため、シンボリックリンクではなくローカル実ファイルとして保持します。存在しない場合のみ `codex/config.toml` から初期作成します。
 
 | エージェント | リンク先 | 正本ファイル |
 | --- | --- | --- |
 | Claude Code（CLI / VSCode拡張） | `~/.claude/CLAUDE.md` | `claude/CLAUDE.md` |
-| Codex CLI | `~/.codex/AGENTS.md` / `~/.codex/config.toml` | `codex/AGENTS.md` / `codex/config.toml` |
+| Codex CLI | `~/.codex/AGENTS.md` / `~/.codex/config.toml` | `codex/AGENTS.md` / `codex/config.toml`（初期テンプレート） |
 | Antigravity CLI（`agy`） | `~/.gemini/GEMINI.md` | `antigravity/GEMINI.md` |
 | GitHub Copilot（VSCode） | `~/.vscode-server/data/User/instructions/` | `vscode/instructions/personal-dev-rules.instructions.md` |
 
