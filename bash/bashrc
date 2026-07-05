@@ -1,9 +1,9 @@
-# 共通 bash 設定（WSL/Ubuntu Desktop 共通）
+# bash 設定（WSL / Ubuntu Desktop 共通。環境差分はファイル内で分岐）
 
 # 対話シェル以外は何もしない
 case $- in
   *i*) ;;
-  *) [ -n "${TA_FORCE:-}" ] || return ;;
+  *) return ;;
 esac
 
 # ローカル bin（AppImage / 手動インストール）
@@ -19,13 +19,11 @@ HISTCONTROL=ignoreboth
 shopt -s histappend
 shopt -s checkwinsize
 
-# ここは好みで増やしてOK（あなたの元設定に近い値）
 HISTSIZE=50000
 HISTFILESIZE=100000
 
 # プロンプト表示のたびに履歴を即時反映
-__prompt_cmd() { :; }
-PROMPT_COMMAND="__prompt_cmd; history -a"
+PROMPT_COMMAND="history -a"
 
 ############################################
 # lesspipe
@@ -33,7 +31,7 @@ PROMPT_COMMAND="__prompt_cmd; history -a"
 [ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
 
 ############################################
-# プロンプト（共通。WSL/Ubuntu でホスト名だけ変えるなら env別で上書き可）
+# プロンプト
 ############################################
 case "$TERM" in
   xterm-color|*-256color|xterm*|rxvt*) color_prompt=yes;;
@@ -62,6 +60,13 @@ fi
 alias ..='cd ..'
 alias ...='cd ../..'
 alias cls='clear'
+
+# 環境別（WSL / Ubuntu Desktop）
+if grep -qi microsoft /proc/version 2>/dev/null; then
+  alias open='explorer.exe .'
+else
+  alias open='xdg-open .'
+fi
 
 # エディタ
 if command -v nvim >/dev/null 2>&1; then
@@ -137,20 +142,8 @@ if [ -s "$NVM_DIR/bash_completion" ]; then
 fi
 
 ############################################
-# tmux：AI アシスト作業セッション（bash/ta.sh に分離）
+# マシン固有設定（gcloud, 仕事用の環境変数など。Git 管理外）
 ############################################
-# shellcheck source=bash/ta.sh
-source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/ta.sh"
-
-############################################
-# SSH 接続時の自動 tmux 接続（共通）
-############################################
-if [ -n "$SSH_CONNECTION" ] && [ -z "$TMUX" ] && command -v tmux >/dev/null 2>&1; then
-  ta
+if [ -f "$HOME/.bashrc.local" ]; then
+  . "$HOME/.bashrc.local"
 fi
-
-# The next line updates PATH for the Google Cloud SDK.
-if [ -f "$HOME/google-cloud-sdk/path.bash.inc" ]; then . "$HOME/google-cloud-sdk/path.bash.inc"; fi
-
-# The next line enables shell command completion for gcloud.
-if [ -f "$HOME/google-cloud-sdk/completion.bash.inc" ]; then . "$HOME/google-cloud-sdk/completion.bash.inc"; fi
