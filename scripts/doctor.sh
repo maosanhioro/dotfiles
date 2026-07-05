@@ -45,7 +45,11 @@ if command -v nvim >/dev/null 2>&1; then
   fi
 fi
 check_cmd rg ripgrep
-check_cmd fd
+if command -v fd >/dev/null 2>&1 || command -v fdfind >/dev/null 2>&1; then
+  ok "fd $(command -v fd || command -v fdfind)"
+else
+  warn "fd が見つかりません"
+fi
 check_cmd fzf
 check_cmd bat
 check_cmd eza
