@@ -1,0 +1,273 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+TAB=$'\t'
+
+usage() {
+  cat <<'USAGE'
+使い方: dev [subcommand] [options]
+
+セッション:
+  dev / dev up [path]     プロジェクト（gitルート優先）のセッションを作成 or アタッチ
+  dev ls                  dev セッション一覧
+  dev kill [name|--all]   セッションを削除（引数なしでカレントプロジェクト）
+
+AI エージェント連携:
+  dev send <agent> <msg>  claude / codex / agy ペインへメッセージ送信
+                          msg が - なら標準入力（複数行はこちら）
+  dev peek <agent> [-n N] ペインの直近出力を表示（既定 120 行）
+
+プロジェクト設定:
+  dev init [options]      AI 設定ファイル（AGENTS.md 等）を配置
+  dev clean [options]     AI 設定ファイルを削除
+
+dotfiles 管理:
+  dev install / uninstall / doctor
+USAGE
+}
+
+die() {
+  echo "dev: $*" >&2
+  exit 1
+}
+
+require_tmux() {
+  command -v tmux >/dev/null 2>&1 || die "tmux がインストールされていません"
+}
+
+# gitルートを返す。git外ならそのディレクトリ自身
+project_root() {
+  local dir="${1:-$PWD}"
+  [ -d "$dir" ] || die "ディレクトリがありません: $dir"
+  dir="$(cd "$dir" && pwd)"
+  git -C "$dir" rev-parse --show-toplevel 2>/dev/null || echo "$dir"
+}
+
+# ディレクトリ名 → tmuxセッション名（. や : はターゲット指定で特別扱いされるため除去）
+sanitize_name() {
+  local name
+  name="$(basename "$1" | tr -c 'A-Za-z0-9_-' '-' | sed -e 's/--*/-/g' -e 's/^-//' -e 's/-$//')"
+  [ -n "$name" ] || name="proj"
+  echo "$name"
+}
+
+# root に対応する既存 dev セッション名を返す（同定は @dev_path、名前は表示用でしかない）
+find_session_for_root() {
+  local root="$1" name path
+  while IFS="$TAB" read -r name path; do
+    if [ "$path" = "$root" ]; then
+      echo "$name"
+      return 0
+    fi
+  done < <(tmux list-sessions -F "#{session_name}${TAB}#{@dev_path}" 2>/dev/null)
+  return 1
+}
+
+# 未使用のセッション名を返す（同名ディレクトリの別プロジェクトは -2 -3... で回避）
+pick_new_name() {
+  local base candidate suffix
+  base="$(sanitize_name "$1")"
+  for suffix in "" -2 -3 -4 -5 -6 -7 -8 -9; do
+    candidate="${base}${suffix}"
+    tmux has-session -t "=$candidate" 2>/dev/null || {
+      echo "$candidate"
+      return 0
+    }
+  done
+  die "セッション名 ${base} の空きがありません（${base}-9 まで使用中）"
+}
+
+# ペインにエージェントを設定する。CLI 不在ならシェルのまま残す（正は @dev_agent、title は表示用）
+setup_pane() {
+  local pane="$1" agent="$2" cmd="$3"
+  tmux set-option -p -t "$pane" @dev_agent "$agent"
+  tmux select-pane -t "$pane" -T "$agent"
+  if command -v "$cmd" >/dev/null 2>&1; then
+    tmux send-keys -t "$pane" -l -- "$cmd"
+    tmux send-keys -t "$pane" Enter
+  else
+    tmux select-pane -t "$pane" -T "${agent} (not installed)"
+  fi
+}
+
+# 3ペイン構築: 左50% claude / 右上 codex / 右下 agy（無ければ nvim）
+build_session() {
+  local root="$1" name="$2" p1 p2 p3 cols lines
+  cols="$(tput cols 2>/dev/null || echo 200)"
+  lines="$(tput lines 2>/dev/null || echo 50)"
+  tmux new-session -d -s "$name" -n main -c "$root" -x "$cols" -y "$lines"
+  # set-option の -t は target-pane 解釈のため「=名前:」形式でないと解決できない
+  tmux set-option -t "=${name}:" @dev_path "$root"
+  p1="$(tmux display-message -p -t "=$name:main" '#{pane_id}')"
+  p2="$(tmux split-window -h -l '50%' -t "$p1" -c "$root" -P -F '#{pane_id}')"
+  p3="$(tmux split-window -v -l '50%' -t "$p2" -c "$root" -P -F '#{pane_id}')"
+  setup_pane "$p1" claude claude
+  setup_pane "$p2" codex codex
+  if command -v agy >/dev/null 2>&1; then
+    setup_pane "$p3" agy agy
+  else
+    setup_pane "$p3" nvim nvim
+  fi
+  tmux select-pane -t "$p1"
+}
+
+# send/peek の対象セッション: tmux内の dev セッションにいればそこ、いなければ cwd から解決
+target_session() {
+  if [ -n "${TMUX:-}" ] && [ -n "$(tmux display-message -p '#{@dev_path}')" ]; then
+    tmux display-message -p '#{session_name}'
+    return 0
+  fi
+  find_session_for_root "$(project_root)" ||
+    die "dev セッションが見つかりません。先に dev でセッションを作成してください"
+}
+
+find_agent_pane() {
+  local session="$1" agent="$2"
+  tmux list-panes -s -t "=$session" -F "#{pane_id}${TAB}#{@dev_agent}" |
+    awk -F'\t' -v a="$agent" '$2 == a { print $1; exit }'
+}
+
+cmd_up() {
+  require_tmux
+  local root name
+  root="$(project_root "${1:-}")"
+  if ! name="$(find_session_for_root "$root")"; then
+    name="$(pick_new_name "$root")"
+    build_session "$root" "$name"
+  fi
+  if [ -n "${TMUX:-}" ]; then
+    tmux switch-client -t "=$name"
+  else
+    exec tmux attach-session -t "=$name"
+  fi
+}
+
+cmd_ls() {
+  require_tmux
+  local out
+  out="$(tmux list-sessions -F "#{session_name}${TAB}#{@dev_path}${TAB}#{?session_attached,attached,detached}" 2>/dev/null |
+    awk -F'\t' '$2 != "" { printf "%-24s %-10s %s\n", $1, $3, $2 }')"
+  if [ -z "$out" ]; then
+    echo "dev セッションはありません"
+  else
+    echo "$out"
+  fi
+}
+
+cmd_kill() {
+  require_tmux
+  local name="${1:-}"
+  if [ "$name" = "--all" ]; then
+    local killed=0 s path
+    while IFS="$TAB" read -r s path; do
+      [ -n "$path" ] || continue
+      tmux kill-session -t "=$s"
+      echo "セッション ${s} を削除しました"
+      killed=$((killed + 1))
+    done < <(tmux list-sessions -F "#{session_name}${TAB}#{@dev_path}" 2>/dev/null)
+    [ "$killed" -gt 0 ] || echo "dev セッションはありません"
+    return 0
+  fi
+  if [ -z "$name" ]; then
+    name="$(find_session_for_root "$(project_root)")" ||
+      { echo "このプロジェクトの dev セッションはありません"; return 0; }
+  fi
+  tmux has-session -t "=$name" 2>/dev/null || { echo "セッション ${name} はありません"; return 0; }
+  tmux kill-session -t "=$name"
+  echo "セッション ${name} を削除しました"
+}
+
+check_agent_arg() {
+  case "${1:-}" in
+    claude | codex | agy) ;;
+    *) die "対象は claude / codex / agy のいずれかです: ${1:-（未指定）}" ;;
+  esac
+}
+
+resolve_agent_pane() {
+  local session="$1" agent="$2" pane
+  pane="$(find_agent_pane "$session" "$agent")"
+  [ -n "$pane" ] ||
+    die "セッション ${session} に ${agent} ペインが見つかりません（agy 不在環境では nvim になります。dev kill && dev で再構築できます）"
+  echo "$pane"
+}
+
+cmd_send() {
+  require_tmux
+  local agent="${1:-}" msg session pane current
+  check_agent_arg "$agent"
+  shift
+  [ $# -ge 1 ] || die "メッセージがありません（複数行は dev send ${agent} - で標準入力から）"
+  if [ "$1" = "-" ]; then
+    msg="$(cat)"
+  else
+    msg="$*"
+  fi
+  [ -n "$msg" ] || die "メッセージが空です"
+
+  session="$(target_session)"
+  pane="$(resolve_agent_pane "$session" "$agent")"
+
+  # CLI が終了したペインへ送るとシェルコマンドとして実行されてしまうため必ず拒否する
+  current="$(tmux display-message -p -t "$pane" '#{pane_current_command}')"
+  case "$current" in
+    bash | zsh | sh | dash | fish)
+      die "${agent} ペインはシェルに戻っています（CLI 未起動/終了済み）。ペインで ${agent} を起動してください"
+      ;;
+  esac
+
+  if [ "${msg//$'\n'/}" != "$msg" ]; then
+    # 改行を send-keys で送ると TUI が1行目で送信確定するため bracketed paste で渡す
+    printf '%s' "$msg" | tmux load-buffer -b devsend -
+    tmux paste-buffer -p -d -b devsend -t "$pane"
+  else
+    tmux send-keys -t "$pane" -l -- "$msg"
+  fi
+  sleep 0.3 # ペースト処理が終わる前の Enter は取りこぼされることがある
+  tmux send-keys -t "$pane" Enter
+  echo "${session} の ${agent} ペインへ送信しました"
+}
+
+cmd_peek() {
+  require_tmux
+  local agent="${1:-}" lines=120 session pane
+  check_agent_arg "$agent"
+  shift
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -n)
+        [ -n "${2:-}" ] || die "-n には行数を指定してください"
+        lines="$2"
+        shift 2
+        ;;
+      *) die "不明なオプション: $1" ;;
+    esac
+  done
+  session="$(target_session)"
+  pane="$(resolve_agent_pane "$session" "$agent")"
+  tmux capture-pane -p -t "$pane" -S "-$lines"
+}
+
+SUBCOMMAND="${1:-up}"
+shift || true
+
+case "$SUBCOMMAND" in
+  up) cmd_up "$@" ;;
+  ls) cmd_ls "$@" ;;
+  kill) cmd_kill "$@" ;;
+  send) cmd_send "$@" ;;
+  peek) cmd_peek "$@" ;;
+  init) exec "$REPO_DIR/scripts/init.sh" "$@" ;;
+  clean) exec "$REPO_DIR/scripts/clean.sh" "$@" ;;
+  install) exec "$REPO_DIR/scripts/install.sh" "$@" ;;
+  uninstall) exec "$REPO_DIR/scripts/uninstall.sh" "$@" ;;
+  doctor) exec "$REPO_DIR/scripts/doctor.sh" "$@" ;;
+  help | --help | -h) usage ;;
+  *)
+    echo "不明なサブコマンド: $SUBCOMMAND" >&2
+    echo "" >&2
+    usage >&2
+    exit 1
+    ;;
+esac
