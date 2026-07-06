@@ -78,16 +78,19 @@ pick_new_name() {
   die "セッション名 ${base} の空きがありません（${base}-9 まで使用中）"
 }
 
-# ペインにエージェントを設定する。CLI 不在ならシェルのまま残す（正は @dev_agent、title は表示用）
+# ペインにエージェントを設定する。CLI 不在ならシェルのまま残す。
+# 同定の正は @dev_agent。境界線の表示名は @dev_title（CLI がエスケープシーケンスで
+# pane_title を上書きしても影響を受けない。空なら pane_title にフォールバック）
 setup_pane() {
-  local pane="$1" agent="$2" cmd="$3"
+  local pane="$1" agent="$2" cmd="$3" title="${4:-}"
   tmux set-option -p -t "$pane" @dev_agent "$agent"
-  tmux select-pane -t "$pane" -T "$agent"
+  tmux set-option -p -t "$pane" @dev_title "$title"
+  tmux select-pane -t "$pane" -T "${title:-$agent}"
   if command -v "$cmd" >/dev/null 2>&1; then
     tmux send-keys -t "$pane" -l -- "$cmd"
     tmux send-keys -t "$pane" Enter
   else
-    tmux select-pane -t "$pane" -T "${agent} (not installed)"
+    tmux set-option -p -t "$pane" @dev_title "${title:-$agent} (not installed)"
   fi
 }
 
@@ -102,12 +105,12 @@ build_session() {
   p1="$(tmux display-message -p -t "=$name:main" '#{pane_id}')"
   p2="$(tmux split-window -h -l '50%' -t "$p1" -c "$root" -P -F '#{pane_id}')"
   p3="$(tmux split-window -v -l '50%' -t "$p2" -c "$root" -P -F '#{pane_id}')"
-  setup_pane "$p1" claude claude
-  setup_pane "$p2" codex codex
+  setup_pane "$p1" claude claude "" # Claude Code はタスク名を動的にタイトル表示するため固定しない
+  setup_pane "$p2" codex codex "Codex CLI"
   if command -v agy >/dev/null 2>&1; then
-    setup_pane "$p3" agy agy
+    setup_pane "$p3" agy agy "Antigravity CLI"
   else
-    setup_pane "$p3" nvim nvim
+    setup_pane "$p3" nvim nvim "nvim"
   fi
   tmux select-pane -t "$p1"
 }
