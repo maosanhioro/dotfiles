@@ -82,10 +82,12 @@ check_cmd pipx
 check_cmd node "node (Mason の LSP サーバ実行に必要)"
 check_cmd claude "Claude Code (claude)"
 check_cmd codex "Codex CLI (codex)"
-if command -v agy >/dev/null 2>&1; then
-  ok "Antigravity CLI (agy) $(command -v agy)"
+check_cmd copilot "GitHub Copilot CLI (copilot)"
+implementer="${DEV_IMPLEMENTER:-codex}"
+if command -v "$implementer" >/dev/null 2>&1; then
+  ok "pane2 実装エージェント: $implementer（DEV_IMPLEMENTER で切替可）"
 else
-  info "Antigravity CLI (agy) なし — dev のペイン3は nvim になります"
+  warn "pane2 実装エージェント ${implementer} が見つかりません（DEV_IMPLEMENTER=codex か =copilot に切替、または該当 CLI を導入）"
 fi
 
 bold "リンク（対応表: scripts/lib.sh）"

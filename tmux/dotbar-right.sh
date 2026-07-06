@@ -35,7 +35,7 @@ pill() {
 
 out=""
 
-# dev セッションなら claude / codex / agy ペインの稼働状態をドットで表示
+# dev セッションなら各ペイン（claude / 実装エージェント / nvim）の稼働状態をドットで表示
 # （@dev_agent は bin/dev が設定。CLI が終了してシェルに戻ったペインは灰色）
 if [ -n "$SESSION" ]; then
   agents=""

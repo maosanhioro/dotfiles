@@ -97,5 +97,6 @@
 
 ## プロジェクト固有ルール
 
-プロジェクトルートに各ツールの指示ファイル（`CLAUDE.md` / `AGENTS.md` / `.antigravity.md`）が
-ある場合、そちらが本ファイルより優先される。
+プロジェクトルートに各ツールの指示ファイル（`CLAUDE.md` / `AGENTS.md`）がある場合、
+そちらが本ファイルより優先される。Codex CLI・GitHub Copilot CLI はいずれも
+`AGENTS.md` を直接読むため、専用のリンクファイルは不要。

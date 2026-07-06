@@ -4,6 +4,10 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 TAB=$'\t'
 
+# pane2（実装担当）に立てる CLI。仕事用マシンでは ~/.zshrc.local に
+# `export DEV_IMPLEMENTER=copilot` と書いて上書きする（個人用は既定の codex のまま）
+DEV_IMPLEMENTER="${DEV_IMPLEMENTER:-codex}"
+
 usage() {
   cat <<'USAGE'
 使い方: dev [subcommand] [options]
@@ -14,7 +18,8 @@ usage() {
   dev kill [name|--all]   セッションを削除（引数なしでカレントプロジェクト）
 
 AI エージェント連携:
-  dev send <agent> <msg>  claude / codex / agy ペインへメッセージ送信
+  dev send <agent> <msg>  claude / impl ペインへメッセージ送信
+                          impl は実装担当（実体は codex か copilot。DEV_IMPLEMENTER で切替）
                           msg が - なら標準入力（複数行はこちら）
   dev peek <agent> [-n N] ペインの直近出力を表示（既定 120 行）
 
@@ -94,7 +99,16 @@ setup_pane() {
   fi
 }
 
-# 3ペイン構築: 左50% claude / 右上 codex / 右下 agy（無ければ nvim）
+# pane2 に立てる実装エージェントの表示名
+implementer_title() {
+  case "$1" in
+    codex) echo "Codex CLI" ;;
+    copilot) echo "GitHub Copilot CLI" ;;
+    *) echo "$1" ;;
+  esac
+}
+
+# 3ペイン構築: 左50% claude / 右上 実装エージェント(DEV_IMPLEMENTER) / 右下 nvim
 build_session() {
   local root="$1" name="$2" p1 p2 p3 cols lines
   cols="$(tput cols 2>/dev/null || echo 200)"
@@ -106,12 +120,8 @@ build_session() {
   p2="$(tmux split-window -h -l '50%' -t "$p1" -c "$root" -P -F '#{pane_id}')"
   p3="$(tmux split-window -v -l '50%' -t "$p2" -c "$root" -P -F '#{pane_id}')"
   setup_pane "$p1" claude claude "" # Claude Code はタスク名を動的にタイトル表示するため固定しない
-  setup_pane "$p2" codex codex "Codex CLI"
-  if command -v agy >/dev/null 2>&1; then
-    setup_pane "$p3" agy agy "Antigravity CLI"
-  else
-    setup_pane "$p3" nvim nvim "nvim"
-  fi
+  setup_pane "$p2" "$DEV_IMPLEMENTER" "$DEV_IMPLEMENTER" "$(implementer_title "$DEV_IMPLEMENTER")"
+  setup_pane "$p3" nvim nvim "nvim"
   tmux select-pane -t "$p1"
 }
 
@@ -127,6 +137,12 @@ target_session() {
 
 find_agent_pane() {
   local session="$1" agent="$2"
+  if [ "$agent" = "impl" ]; then
+    # impl は実体名（codex/copilot）を問わず実装担当ペインを指す別名
+    tmux list-panes -s -t "=$session" -F "#{pane_id}${TAB}#{@dev_agent}" |
+      awk -F'\t' '$2 == "codex" || $2 == "copilot" { print $1; exit }'
+    return
+  fi
   tmux list-panes -s -t "=$session" -F "#{pane_id}${TAB}#{@dev_agent}" |
     awk -F'\t' -v a="$agent" '$2 == a { print $1; exit }'
 }
@@ -183,8 +199,8 @@ cmd_kill() {
 
 check_agent_arg() {
   case "${1:-}" in
-    claude | codex | agy) ;;
-    *) die "対象は claude / codex / agy のいずれかです: ${1:-（未指定）}" ;;
+    claude | codex | copilot | impl) ;;
+    *) die "対象は claude / codex / copilot / impl のいずれかです: ${1:-（未指定）}" ;;
   esac
 }
 
@@ -192,7 +208,7 @@ resolve_agent_pane() {
   local session="$1" agent="$2" pane
   pane="$(find_agent_pane "$session" "$agent")"
   [ -n "$pane" ] ||
-    die "セッション ${session} に ${agent} ペインが見つかりません（agy 不在環境では nvim になります。dev kill && dev で再構築できます）"
+    die "セッション ${session} に ${agent} ペインが見つかりません（dev kill && dev で再構築できます）"
   echo "$pane"
 }
 

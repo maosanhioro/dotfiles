@@ -56,7 +56,6 @@ LEGACY_PATHS=(
 PROJECT_FILES_CORE=(
   "AGENTS.md"
   "CLAUDE.md"
-  ".antigravity.md"
   "AGENT_HANDOFF_LOG.md"
 )
 PROJECT_FILES_LEGACY=(
@@ -65,6 +64,7 @@ PROJECT_FILES_LEGACY=(
   "CODEX.md"
   "GEMINI.md"
   ".github/copilot-instructions.md"
+  ".antigravity.md"
 )
 
 GITIGNORE_HEADER="# AI agent files (managed by dev)"

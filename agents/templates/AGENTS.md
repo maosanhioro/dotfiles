@@ -2,7 +2,8 @@
 
 このファイルはプロジェクト固有のルールを定義します。
 グローバル設定（`~/.claude/CLAUDE.md` / `~/.codex/AGENTS.md` / `~/.gemini/GEMINI.md`）を上書き・補足できます。
-`CLAUDE.md` と `.antigravity.md` はこのファイルへのシンボリックリンクです（編集はこのファイルへ）。
+`CLAUDE.md` はこのファイルへのシンボリックリンクです（編集はこのファイルへ）。
+Codex CLI・GitHub Copilot CLI はこのファイルを直接読む。
 
 ---
 

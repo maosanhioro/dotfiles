@@ -13,7 +13,6 @@ usage() {
 カレントプロジェクトに AI エージェント設定を配置します:
   AGENTS.md              プロジェクト固有ルールの正本（テンプレートからコピー）
   CLAUDE.md              AGENTS.md へのシンボリックリンク（Claude Code 用）
-  .antigravity.md        AGENTS.md へのシンボリックリンク（agy がある環境のみ）
   AGENT_HANDOFF_LOG.md   エージェント間の引き継ぎログ
 
 すべて .gitignore に追記されます（個人設定のためコミットしない前提）。
@@ -84,11 +83,6 @@ gitignore_add "AGENTS.md"
 
 place_link "AGENTS.md" "$DEST_DIR/CLAUDE.md"
 gitignore_add "CLAUDE.md"
-
-if command -v agy >/dev/null 2>&1; then
-  place_link "AGENTS.md" "$DEST_DIR/.antigravity.md"
-  gitignore_add ".antigravity.md"
-fi
 
 place_file "$TEMPLATE_ROOT/AGENT_HANDOFF_LOG.md" "$DEST_DIR/AGENT_HANDOFF_LOG.md"
 gitignore_add "AGENT_HANDOFF_LOG.md"
