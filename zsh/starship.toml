@@ -1,0 +1,105 @@
+# starship プロンプト設定（Nerd Font 前提）
+# nvim (LazyVim) の colorscheme = onedark に合わせ、色は One Half Dark で統一。
+# 見た目は角丸チップ（ピル）セグメント方式。tmux-dotbar のセッション表示と同じ
+# 丸カプセル記号（/、Powerline Extra Symbols）を使って統一感を出す。
+#
+# ピルの継ぎ目の作り方（重要・変更時に壊しやすい箇所）:
+#   単独で常に表示されるモジュール（directory 等）は自分の format 内で開始・終了の
+#   両カプセルを持つ。一方 [git_branch]+[git_status] のように「片方は常に出るが
+#   もう片方は空になりうる」組は、開始カプセルを常に出る側の先頭に、終了カプセルは
+#   出たり出なかったりする側の *条件付き括弧の外側* に置く。こうすると status が
+#   空でも branch だけの単色ピルとして自然に閉じる。
+
+"$schema" = 'https://starship.rs/config-schema.json'
+add_newline = true
+
+format = """
+$hostname\
+$directory\
+$git_branch\
+$git_status\
+$git_state\
+$nodejs\
+$python\
+$line_break\
+$character"""
+
+right_format = """$status$cmd_duration$time"""
+
+username.disabled = true
+
+# SSH 接続時のみ赤いピルで警告的に表示
+[hostname]
+ssh_only = true
+style = 'fg:#282c34 bg:#e06c75 bold'
+format = '[](fg:#e06c75)[  @$hostname ]($style)[](fg:#e06c75) '
+
+[directory]
+style = 'fg:#282c34 bg:#61afef bold'
+truncation_length = 4
+truncate_to_repo = true
+read_only = ' '
+read_only_style = 'fg:#e06c75 bg:#61afef bold'
+format = '[](fg:#61afef)[  $path ]($style)[$read_only]($read_only_style)[](fg:#61afef) '
+
+# ブランチ名で開いたピルを、後続の git_status が終了カプセルで閉じる
+[git_branch]
+symbol = ''
+style = 'fg:#282c34 bg:#c678dd bold'
+format = '[](fg:#c678dd)[ $symbol $branch]($style)'
+
+# 通常の変更（staged/modified/untracked/stashed）は濃紺、注意を引きたいもの
+# （deleted/conflicted/ahead/behind）は赤系にして視線を誘導する
+[git_status]
+format = '([$all_status$ahead_behind](bg:#c678dd))[](fg:#c678dd) '
+staged = '[ ${count}](fg:#282c34 bg:#c678dd bold)'
+modified = '[ ${count}](fg:#282c34 bg:#c678dd bold)'
+untracked = '[ ${count}](fg:#282c34 bg:#c678dd bold)'
+stashed = '[ ${count}](fg:#282c34 bg:#c678dd bold)'
+deleted = '[ ${count}](fg:#e06c75 bg:#c678dd bold)'
+conflicted = '[ ${count}](fg:#e06c75 bg:#c678dd bold)'
+ahead = '[ ${count}](fg:#e06c75 bg:#c678dd bold)'
+behind = '[ ${count}](fg:#e06c75 bg:#c678dd bold)'
+diverged = '[ ${ahead_count} ${behind_count}](fg:#e06c75 bg:#c678dd bold)'
+
+# rebase / merge 中は目立つ赤いピルで警告
+[git_state]
+style = 'fg:#282c34 bg:#e06c75 bold'
+format = '[](fg:#e06c75)[ $state( $progress_current/$progress_total) ]($style)[](fg:#e06c75) '
+
+# package.json / .nvmrc があるプロジェクトでだけ表示
+[nodejs]
+symbol = ''
+style = 'fg:#282c34 bg:#98c379 bold'
+format = '[](fg:#98c379)[ $symbol($version) ]($style)[](fg:#98c379) '
+detect_extensions = []
+detect_files = ['package.json', '.nvmrc']
+detect_folders = ['node_modules']
+
+[python]
+symbol = ''
+style = 'fg:#282c34 bg:#56b6c2 bold'
+format = '[](fg:#56b6c2)[ $symbol($version)( \($virtualenv\)) ]($style)[](fg:#56b6c2) '
+
+# 直前コマンドの終了コード（0 以外のときだけ右側に出る）
+[status]
+disabled = false
+symbol = '✘ '
+style = 'bold red'
+format = '[$symbol$status]($style) '
+
+# 2 秒以上かかったコマンドの所要時間
+[cmd_duration]
+min_time = 2000
+style = 'yellow'
+format = '[ $duration]($style) '
+
+[time]
+disabled = false
+style = 'fg:#5c6370'
+time_format = '%H:%M'
+format = '[ $time]($style)'
+
+[character]
+success_symbol = '[❯](bold green)'
+error_symbol = '[❯](bold red)'

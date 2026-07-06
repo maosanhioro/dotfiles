@@ -44,6 +44,31 @@ if command -v nvim >/dev/null 2>&1; then
     warn "nvim $nvim_ver は古すぎます（LazyVim は 0.11 以上が必要。./scripts/install.sh --force で更新）"
   fi
 fi
+check_cmd zsh
+if command -v zsh >/dev/null 2>&1; then
+  login_shell="$(getent passwd "$USER" | cut -d: -f7)"
+  if [ "$login_shell" = "$(command -v zsh)" ]; then
+    ok "ログインシェル zsh"
+  else
+    warn "ログインシェルが zsh ではありません: $login_shell（chsh -s $(command -v zsh)）"
+  fi
+fi
+check_cmd starship
+if [ -f /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
+  ok "zsh-autosuggestions"
+else
+  warn "zsh-autosuggestions が見つかりません（apt install zsh-autosuggestions）"
+fi
+if [ -f /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]; then
+  ok "zsh-syntax-highlighting"
+else
+  warn "zsh-syntax-highlighting が見つかりません（apt install zsh-syntax-highlighting）"
+fi
+if [ -e "$DOTBAR_DIR/dotbar.tmux" ]; then
+  ok "tmux-dotbar $DOTBAR_DIR"
+else
+  warn "tmux-dotbar が見つかりません（./scripts/install.sh で clone されます）"
+fi
 check_cmd rg ripgrep
 if command -v fd >/dev/null 2>&1 || command -v fdfind >/dev/null 2>&1; then
   ok "fd $(command -v fd || command -v fdfind)"
@@ -89,7 +114,7 @@ elif [ -f "$CODEX_CONFIG" ]; then
 else
   warn "~/.codex/config.toml が見つかりません"
 fi
-for f in "$HOME/.gitconfig.local" "$HOME/.bashrc.local"; do
+for f in "$HOME/.gitconfig.local" "$HOME/.bashrc.local" "$HOME/.zshrc.local"; do
   if [ -f "$f" ]; then
     ok "$f"
   else

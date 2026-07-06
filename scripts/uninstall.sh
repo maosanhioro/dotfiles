@@ -7,8 +7,9 @@ usage() {
   cat <<'USAGE'
 使い方: ./scripts/uninstall.sh [options]
 
-dotfiles が張ったシンボリックリンクを削除します。
-ローカル状態（~/.codex/config.toml, ~/.gitconfig.local, ~/.bashrc.local）は残します。
+dotfiles が張ったシンボリックリンクと tmux-dotbar を削除します。
+ローカル状態（~/.codex/config.toml, ~/.gitconfig.local, ~/.bashrc.local, ~/.zshrc.local）は残します。
+ログインシェルは変更しません（bash に戻す場合: chsh -s /bin/bash）。
 
 オプション:
   --dry-run     実行せずに内容だけ表示
@@ -44,8 +45,16 @@ for legacy in "${LEGACY_PATHS[@]}"; do
   remove_link "$legacy"
 done
 
+if [ -d "$DOTBAR_DIR" ]; then
+  run rm -rf "$DOTBAR_DIR"
+  echo "削除: $DOTBAR_DIR"
+fi
+
 echo
 echo "以下のローカル状態ファイルは残しています（不要なら手動で削除してください）:"
 echo "  ~/.codex/config.toml"
 echo "  ~/.gitconfig.local"
 echo "  ~/.bashrc.local"
+echo "  ~/.zshrc.local"
+echo
+echo "ログインシェルは変更していません。bash に戻す場合: chsh -s /bin/bash"

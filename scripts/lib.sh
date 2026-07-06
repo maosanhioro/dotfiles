@@ -21,12 +21,15 @@ is_wsl() {
 # リンク対応表: "リンク先(HOME側)|実体(リポジトリ相対)"
 LINKS=(
   "$HOME/.bashrc|bash/bashrc"
+  "$HOME/.zshrc|zsh/zshrc"
+  "$HOME/.config/starship.toml|zsh/starship.toml"
   "$HOME/.gitconfig|git/gitconfig"
   "$HOME/.tmux.conf|tmux/tmux.conf"
   "$HOME/.tmux.wsl.conf|tmux/tmux.wsl.conf"
   "$HOME/.tmux.ubuntu.conf|tmux/tmux.ubuntu.conf"
   "$HOME/.config/nvim|nvim"
   "$HOME/.local/bin/dev|bin/dev"
+  "$HOME/.local/bin/dotbar-right|tmux/dotbar-right.sh"
   "$HOME/.claude/CLAUDE.md|agents/AGENTS.md"
   "$HOME/.claude/skills/delegate|agents/claude/skills/delegate"
   "$HOME/.codex/AGENTS.md|agents/AGENTS.md"
@@ -36,6 +39,10 @@ LINKS=(
 # リンクではなくコピーで配置するもの（project trust 等のローカル状態を保持するため）
 CODEX_CONFIG="$HOME/.codex/config.toml"
 CODEX_CONFIG_TEMPLATE="$REPO_DIR/agents/codex/config.toml"
+
+# tmux-dotbar（install が clone し、doctor が検出し、uninstall が削除する。TPM は使わない）
+DOTBAR_DIR="$HOME/.config/tmux/plugins/tmux-dotbar"
+DOTBAR_REPO="https://github.com/vaaleyard/tmux-dotbar.git"
 
 # 旧構成の残骸（install が掃除し、doctor が検出する）
 LEGACY_PATHS=(

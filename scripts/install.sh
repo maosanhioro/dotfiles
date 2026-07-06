@@ -140,6 +140,62 @@ if ! command -v pipx >/dev/null 2>&1; then
   run pipx ensurepath
 fi
 
+############################################
+# zsh + プラグイン（apt 版を直接 source する。プラグインマネージャは使わない）
+############################################
+if ! command -v zsh >/dev/null 2>&1; then
+  echo "zsh をインストール中..."
+  apt_install zsh
+fi
+
+if [ ! -f /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
+  echo "zsh-autosuggestions をインストール中..."
+  apt_install zsh-autosuggestions
+fi
+
+if [ ! -f /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]; then
+  echo "zsh-syntax-highlighting をインストール中..."
+  apt_install zsh-syntax-highlighting
+fi
+
+############################################
+# starship（apt に無いため公式インストーラで ~/.local/bin へ。nvim AppImage と同じ方式）
+############################################
+if [ "$FORCE" -eq 1 ] || ! command -v starship >/dev/null 2>&1; then
+  echo "starship をインストール中..."
+  command -v curl >/dev/null 2>&1 || apt_install curl
+  run mkdir -p "$HOME/.local/bin"
+  run sh -c "curl -fsSL https://starship.rs/install.sh | sh -s -- -y -b '$HOME/.local/bin'"
+fi
+
+############################################
+# tmux-dotbar（ステータスバーテーマ。TPM は使わず直接 clone）
+############################################
+if [ ! -d "$DOTBAR_DIR" ]; then
+  echo "tmux-dotbar を配置中..."
+  run mkdir -p "$(dirname "$DOTBAR_DIR")"
+  run git clone --depth 1 "$DOTBAR_REPO" "$DOTBAR_DIR"
+elif [ "$FORCE" -eq 1 ]; then
+  echo "tmux-dotbar を更新中..."
+  run git -C "$DOTBAR_DIR" pull --ff-only
+fi
+
+############################################
+# Nerd Font（starship / dotbar のアイコン表示に必要）
+# WSL はフォントが Windows 側のため自動化できない（完了メッセージで案内）
+############################################
+if ! is_wsl; then
+  command -v fc-list >/dev/null 2>&1 || apt_install fontconfig
+  if ! fc-list 2>/dev/null | grep -qi 'JetBrainsMono Nerd Font'; then
+    echo "JetBrainsMono Nerd Font をインストール中..."
+    run mkdir -p "$HOME/.local/share/fonts/JetBrainsMonoNerd"
+    run curl -fsSL -o /tmp/JetBrainsMono.zip "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip"
+    run unzip -o /tmp/JetBrainsMono.zip -d "$HOME/.local/share/fonts/JetBrainsMonoNerd"
+    run rm -f /tmp/JetBrainsMono.zip
+    run fc-cache -f
+  fi
+fi
+
 # Ubuntu Desktop 側クリップボード
 if ! is_wsl; then
   if command -v wl-copy >/dev/null 2>&1; then
@@ -193,6 +249,26 @@ if [ ! -f "$HOME/.bashrc.local" ]; then
 LOCALRC
 fi
 
+if [ ! -f "$HOME/.zshrc.local" ]; then
+  echo "~/.zshrc.local を作成中（マシン固有のシェル設定はここへ）"
+  run tee "$HOME/.zshrc.local" >/dev/null <<'LOCALRC'
+# マシン固有のシェル設定（Git 管理外）
+# 例: gcloud SDK の読み込み、仕事用の環境変数、追加 PATH など
+# bash から移行した場合は ~/.bashrc.local から必要なものをコピーする
+LOCALRC
+fi
+
+############################################
+# ログインシェルを zsh へ
+############################################
+zsh_path="$(command -v zsh || true)"
+login_shell="$(getent passwd "$USER" | cut -d: -f7)"
+if [ -n "$zsh_path" ] && [ "$login_shell" != "$zsh_path" ]; then
+  echo "ログインシェルを zsh に変更中（パスワードを求められる場合があります）..."
+  run chsh -s "$zsh_path" ||
+    echo "  chsh に失敗しました。手動で実行してください: chsh -s $zsh_path"
+fi
+
 ############################################
 # ~/.codex/config.toml（リンクではなくコピー。project trust をローカル保持するため）
 ############################################
@@ -226,6 +302,12 @@ done
 echo
 echo "セットアップ完了。"
 echo "次の手順:"
-echo "  source ~/.bashrc"
+echo "  exec zsh       # 新しいシェルへ切り替え（次回ログインからは自動で zsh）"
 echo "  dev            # プロジェクトディレクトリで実行するとセッションが立ち上がる"
 echo "  dev doctor     # 健全性チェック"
+if is_wsl; then
+  echo
+  echo "【WSL】アイコン表示には Windows Terminal のフォント変更が必要:"
+  echo "  設定 → プロファイル → 外観 → フォント → 'Cascadia Code NF'（Windows 11 標準搭載）"
+  echo "  無ければ JetBrainsMono Nerd Font を Windows にインストールして指定する"
+fi
