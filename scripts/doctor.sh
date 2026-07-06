@@ -18,11 +18,6 @@ check_cmd() {
   fi
 }
 
-version_at_least() {
-  # $1=現在 $2=要求。sort -V の最小値が要求と一致すれば満たしている
-  [ "$(printf '%s\n%s\n' "$2" "$1" | sort -V | head -n1)" = "$2" ]
-}
-
 bold "Dotfiles 診断"
 
 bold "コマンド"
@@ -76,6 +71,14 @@ else
   warn "fd が見つかりません"
 fi
 check_cmd fzf
+if command -v fzf >/dev/null 2>&1; then
+  fzf_ver="$(fzf --version | awk '{print $1}')"
+  if version_at_least "$fzf_ver" "0.45"; then
+    ok "fzf バージョン $fzf_ver (>= 0.45)"
+  else
+    warn "fzf $fzf_ver は古すぎます（LazyVim ダッシュボードの Find File/Text が動きません。./scripts/install.sh --force で更新）"
+  fi
+fi
 check_cmd bat
 check_cmd eza
 check_cmd pipx

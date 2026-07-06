@@ -192,6 +192,9 @@ mkcd / extract / path
   ```
 - **プロンプトやステータスバーのアイコンが □（豆腐）になる**: 端末のフォントが Nerd Font になっていない。
   セットアップ節のフォント手順を参照
+- **nvim ダッシュボードの Find File/Find Text が何も表示せずエラーが一瞬出る**: `fzf` が古い
+  （apt 版は `transform` アクション未対応で fzf-lua がエラーになる）。`./scripts/install.sh --force`
+  で upstream の最新バイナリに更新される（`dev doctor` で `fzf` のバージョンを確認可能）
 - **日本語の曖昧幅文字（○△→ 等）の幅がズレる**: 端末側の曖昧幅設定を narrow（半角）にする。
   nvim 側の `ambiwidth=double` は LazyVim のアイコン UI と非互換のため使わない
 - **`dev send` が「シェルに戻っています」と言う**: 対象ペインで CLI（codex/copilot 等）を起動し直す

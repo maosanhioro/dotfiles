@@ -104,9 +104,36 @@ if ! command -v fd >/dev/null 2>&1 && ! command -v fdfind >/dev/null 2>&1; then
   apt_install fd-find
 fi
 
-if ! command -v fzf >/dev/null 2>&1; then
-  echo "fzf をインストール中..."
-  apt_install fzf
+install_fzf_binary() {
+  echo "fzf（最新版）をインストール中..."
+  command -v curl >/dev/null 2>&1 || apt_install curl
+  run mkdir -p "$HOME/.local/bin"
+  local tag tmp
+  tag="$(curl -fsSL https://api.github.com/repos/junegunn/fzf/releases/latest |
+    grep -m1 '"tag_name"' | sed -E 's/.*"v?([0-9.]+)".*/\1/')"
+  [ -n "$tag" ] || { echo "fzf の最新バージョン取得に失敗しました。手動でインストールしてください"; return 1; }
+  tmp="/tmp/fzf-${tag}.tar.gz"
+  run curl -fsSL -o "$tmp" \
+    "https://github.com/junegunn/fzf/releases/download/v${tag}/fzf-${tag}-linux_amd64.tar.gz"
+  run tar -xzf "$tmp" -C "$HOME/.local/bin" fzf
+  run chmod +x "$HOME/.local/bin/fzf"
+  run rm -f "$tmp"
+}
+
+# apt の fzf は Debian/Ubuntu で更新が遅く、LazyVim ダッシュボードの fzf-lua が
+# 要求する `transform` アクション（fzf >= 0.45 で追加）に届かないことがある
+if dpkg -s fzf >/dev/null 2>&1; then
+  echo "apt 版 fzf を削除中（新しいバイナリと重複させないため）..."
+  run ${SUDO} apt-get remove -y fzf
+fi
+
+if [ "$FORCE" -eq 1 ] || ! command -v fzf >/dev/null 2>&1; then
+  install_fzf_binary
+else
+  fzf_ver="$(fzf --version | awk '{print $1}')"
+  if ! version_at_least "$fzf_ver" "0.45"; then
+    install_fzf_binary
+  fi
 fi
 
 if ! command -v unzip >/dev/null 2>&1; then

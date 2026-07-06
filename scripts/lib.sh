@@ -18,6 +18,11 @@ is_wsl() {
   grep -qi microsoft /proc/version 2>/dev/null
 }
 
+version_at_least() {
+  # $1=現在 $2=要求。sort -V の最小値が要求と一致すれば満たしている
+  [ "$(printf '%s\n%s\n' "$2" "$1" | sort -V | head -n1)" = "$2" ]
+}
+
 # リンク対応表: "リンク先(HOME側)|実体(リポジトリ相対)"
 LINKS=(
   "$HOME/.bashrc|bash/bashrc"
