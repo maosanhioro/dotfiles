@@ -1,14 +1,11 @@
 # starship プロンプト設定（Nerd Font 前提）
 # nvim (LazyVim) の colorscheme = onedark に合わせ、色は One Half Dark で統一。
-# 見た目は角丸チップ（ピル）セグメント方式。tmux-dotbar のセッション表示と同じ
-# 丸カプセル記号（/、Powerline Extra Symbols）を使って統一感を出す。
 #
-# ピルの継ぎ目の作り方（重要・変更時に壊しやすい箇所）:
-#   単独で常に表示されるモジュール（directory 等）は自分の format 内で開始・終了の
-#   両カプセルを持つ。一方 [git_branch]+[git_status] のように「片方は常に出るが
-#   もう片方は空になりうる」組は、開始カプセルを常に出る側の先頭に、終了カプセルは
-#   出たり出なかったりする側の *条件付き括弧の外側* に置く。こうすると status が
-#   空でも branch だけの単色ピルとして自然に閉じる。
+# 背景色で塗った角丸/矢印カプセル記号（Powerline Extra Symbols, E0B0〜E0B7）は
+# GNOME Terminal(VTE) で上端が欠けて描画される既知の不具合があり、形を丸→矢印に
+# 変えても解消しなかった。カプセル自体（図形＋背景色）が原因のため、背景色チップ
+# 方式はやめ、前景色のテキスト＋アイコンだけで区別するフラットな配色にしている。
+# Windows Terminal / GNOME Terminal のどちらでも同じ見た目になる。
 
 "$schema" = 'https://starship.rs/config-schema.json'
 add_newline = true
@@ -28,58 +25,60 @@ right_format = """$status$cmd_duration$time"""
 
 username.disabled = true
 
-# SSH 接続時のみ赤いピルで警告的に表示
+# SSH 接続時のみ赤字で警告的に表示
 [hostname]
 ssh_only = true
-style = 'fg:#282c34 bg:#e06c75 bold'
-format = '[](fg:#e06c75)[  @$hostname ]($style)[](fg:#e06c75) '
+style = 'bold #e06c75'
+format = '[ @$hostname]($style) '
 
 [directory]
-style = 'fg:#282c34 bg:#61afef bold'
+style = 'bold #61afef'
 truncation_length = 4
 truncate_to_repo = true
-read_only = ' '
-read_only_style = 'fg:#e06c75 bg:#61afef bold'
-format = '[](fg:#61afef)[  $path ]($style)[$read_only]($read_only_style)[](fg:#61afef) '
+read_only = ' '
+read_only_style = '#e06c75'
+format = '[ $path]($style)[$read_only]($read_only_style) '
 
-# ブランチ名で開いたピルを、後続の git_status が終了カプセルで閉じる
 [git_branch]
-symbol = ''
-style = 'fg:#282c34 bg:#c678dd bold'
-format = '[](fg:#c678dd)[ $symbol $branch]($style)'
+symbol = ''
+style = 'bold #c678dd'
+format = '[$symbol $branch]($style) '
 
-# 通常の変更（staged/modified/untracked/stashed）は濃紺、注意を引きたいもの
-# （deleted/conflicted/ahead/behind）は赤系にして視線を誘導する
+# 数字だけでは種類が分からないため starship 標準の記号で区別する:
+#   +staged !modified ?untracked $stashed »renamed（通常の変更＝紫）
+#   ✘deleted =conflicted ⇡ahead ⇣behind ⇕diverged（注意を引きたいもの＝赤）
 [git_status]
-format = '([$all_status$ahead_behind](bg:#c678dd))[](fg:#c678dd) '
-staged = '[ ${count}](fg:#282c34 bg:#c678dd bold)'
-modified = '[ ${count}](fg:#282c34 bg:#c678dd bold)'
-untracked = '[ ${count}](fg:#282c34 bg:#c678dd bold)'
-stashed = '[ ${count}](fg:#282c34 bg:#c678dd bold)'
-deleted = '[ ${count}](fg:#e06c75 bg:#c678dd bold)'
-conflicted = '[ ${count}](fg:#e06c75 bg:#c678dd bold)'
-ahead = '[ ${count}](fg:#e06c75 bg:#c678dd bold)'
-behind = '[ ${count}](fg:#e06c75 bg:#c678dd bold)'
-diverged = '[ ${ahead_count} ${behind_count}](fg:#e06c75 bg:#c678dd bold)'
+style = 'bold #c678dd'
+format = '([$all_status$ahead_behind]($style)) '
+staged = '[+${count}](#c678dd)'
+modified = '[!${count}](#c678dd)'
+untracked = '[?${count}](#c678dd)'
+stashed = '[\$${count}](#c678dd)'
+renamed = '[»${count}](#c678dd)'
+deleted = '[✘${count}](#e06c75)'
+conflicted = '[=${count}](#e06c75)'
+ahead = '[⇡${count}](#e06c75)'
+behind = '[⇣${count}](#e06c75)'
+diverged = '[⇕⇡${ahead_count}⇣${behind_count}](#e06c75)'
 
-# rebase / merge 中は目立つ赤いピルで警告
+# rebase / merge 中は赤字で警告
 [git_state]
-style = 'fg:#282c34 bg:#e06c75 bold'
-format = '[](fg:#e06c75)[ $state( $progress_current/$progress_total) ]($style)[](fg:#e06c75) '
+style = 'bold #e06c75'
+format = '[ $state( $progress_current/$progress_total)]($style) '
 
 # package.json / .nvmrc があるプロジェクトでだけ表示
 [nodejs]
-symbol = ''
-style = 'fg:#282c34 bg:#98c379 bold'
-format = '[](fg:#98c379)[ $symbol($version) ]($style)[](fg:#98c379) '
+symbol = ''
+style = 'bold #98c379'
+format = '[ $symbol($version)]($style) '
 detect_extensions = []
 detect_files = ['package.json', '.nvmrc']
 detect_folders = ['node_modules']
 
 [python]
-symbol = ''
-style = 'fg:#282c34 bg:#56b6c2 bold'
-format = '[](fg:#56b6c2)[ $symbol($version)( \($virtualenv\)) ]($style)[](fg:#56b6c2) '
+symbol = ''
+style = 'bold #56b6c2'
+format = '[ $symbol($version)( \($virtualenv\))]($style) '
 
 # 直前コマンドの終了コード（0 以外のときだけ右側に出る）
 [status]
@@ -96,9 +95,9 @@ format = '[ $duration]($style) '
 
 [time]
 disabled = false
-style = 'fg:#5c6370'
+style = '#5c6370'
 time_format = '%H:%M'
-format = '[ $time]($style)'
+format = '[ $time]($style)'
 
 [character]
 success_symbol = '[❯](bold green)'

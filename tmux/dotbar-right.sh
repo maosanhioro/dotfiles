@@ -1,36 +1,35 @@
 #!/usr/bin/env bash
-# tmux-dotbar 右側: dev エージェント稼働状況 / 負荷 / メモリ / 時刻を
-# starship プロンプトと同じ「角丸チップ」デザインで並べる。
+# tmux-dotbar 右側: dev エージェント稼働状況 / 負荷 / メモリ / 時刻。
+# 背景色で塗ったカプセル記号（旧デザイン）は GNOME Terminal(VTE) で上端が欠けて
+# 描画される既知の不具合があったため廃止し、前景色のテキスト＋アイコンと
+# 通常の罫線文字（│）区切りだけで表現する（starship.toml と揃えた方針）。
 # tmux.conf の @tmux-dotbar-status-right から #() で status-interval ごとに呼ばれる。
-# グリフは編集事故・文字化けを防ぐため \u エスケープで定義する
-# （すべて BMP 私用領域 = 全 Nerd Font 収録・幅は常に半角）
 set -u
 
 SESSION="${1:-}"
 TAB=$'\t'
 
-CAP_L=$'\ue0b6'   # 丸カプセル左端
-CAP_R=$'\ue0b4'   # 丸カプセル右端
-I_CPU=$'\uf2db'   # microchip
-I_MEM=$'\uf1c0'   # database
-I_CLOCK=$'\uf017' # clock
+I_CPU=$''   # microchip
+I_MEM=$''   # database
+I_CLOCK=$'' # clock
 DOT=$'●'
+SEP='│'
 
-BG0="#282c34"   # tmux/starship と共通の基調背景
-FG_DARK="#282c34"
 C_BLUE="#61afef"
 C_PURPLE="#c678dd"
 C_CYAN="#56b6c2"
-C_GRAY="#3e4451"
-C_FG_MUTED="#dcdfe4"
+C_MUTED="#5c6370"
+C_FG="#dcdfe4"
 C_ON="#98c379"  # CLI 稼働中のドット色
 C_OFF="#5c6370" # シェルに戻った（停止）のドット色
 
-# 角丸チップを1個組み立てる: pill <bg> <fg> <内容(tmux書式込みでOK)>
-pill() {
-  local bg="$1" fg="$2" content="$3"
-  printf '#[fg=%s,bg=default]%s#[fg=%s,bg=%s,bold] %s #[fg=%s,bg=default]%s#[default] ' \
-    "$bg" "$CAP_L" "$fg" "$bg" "$content" "$bg" "$CAP_R"
+seg() {
+  local color="$1" content="$2"
+  printf '#[fg=%s,bold]%s#[default]' "$color" "$content"
+}
+
+sep() {
+  printf ' #[fg=%s]%s#[default] ' "$C_MUTED" "$SEP"
 }
 
 out=""
@@ -45,20 +44,18 @@ if [ -n "$SESSION" ]; then
       bash | zsh | sh | dash | fish) color="$C_OFF" ;;
       *) color="$C_ON" ;;
     esac
-    agents="${agents}#[fg=${color}]${DOT}#[fg=${C_FG_MUTED}] ${agent}  "
+    agents="${agents}#[fg=${color}]${DOT}#[fg=${C_FG}] ${agent}  "
   done < <(tmux list-panes -s -t "=$SESSION" -F "#{@dev_agent}${TAB}#{pane_current_command}" 2>/dev/null)
   agents="${agents%  }"
-  if [ -n "$agents" ]; then
-    out="$(pill "$C_GRAY" "$C_FG_MUTED" "$agents")"
-  fi
+  [ -n "$agents" ] && out="${agents}$(sep)"
 fi
 
 load="$(cut -d' ' -f1 /proc/loadavg 2>/dev/null || echo '?')"
 mem="$(awk '/MemTotal/ {t=$2} /MemAvailable/ {a=$2} END {if (t>0) printf("%d%%",(t-a)*100/t); else print "?"}' /proc/meminfo 2>/dev/null)"
 clock="$(date +%H:%M)"
 
-out="${out}$(pill "$C_BLUE" "$FG_DARK" "${I_CPU} ${load}")"
-out="${out}$(pill "$C_PURPLE" "$FG_DARK" "${I_MEM} ${mem}")"
-out="${out}$(pill "$C_CYAN" "$FG_DARK" "${I_CLOCK} ${clock}")"
+out="${out}$(seg "$C_BLUE" "${I_CPU} ${load}")$(sep)"
+out="${out}$(seg "$C_PURPLE" "${I_MEM} ${mem}")$(sep)"
+out="${out}$(seg "$C_CYAN" "${I_CLOCK} ${clock}")"
 
-printf '%s' "${out% }"
+printf '%s ' "${out}"
