@@ -108,9 +108,11 @@ install_fzf_binary() {
   echo "fzf（最新版）をインストール中..."
   command -v curl >/dev/null 2>&1 || apt_install curl
   run mkdir -p "$HOME/.local/bin"
-  local tag tmp
-  tag="$(curl -fsSL https://api.github.com/repos/junegunn/fzf/releases/latest |
-    grep -m1 '"tag_name"' | sed -E 's/.*"v?([0-9.]+)".*/\1/')"
+  local tag tmp api_tmp
+  api_tmp="$(mktemp)"
+  curl -fsSL https://api.github.com/repos/junegunn/fzf/releases/latest > "$api_tmp"
+  tag="$(grep -m1 '"tag_name"' "$api_tmp" | sed -E 's/.*"v?([0-9.]+)".*/\1/')"
+  rm -f "$api_tmp"
   [ -n "$tag" ] || { echo "fzf の最新バージョン取得に失敗しました。手動でインストールしてください"; return 1; }
   tmp="/tmp/fzf-${tag}.tar.gz"
   run curl -fsSL -o "$tmp" \
@@ -220,6 +222,20 @@ if ! is_wsl; then
     run unzip -o /tmp/JetBrainsMono.zip -d "$HOME/.local/share/fonts/JetBrainsMonoNerd"
     run rm -f /tmp/JetBrainsMono.zip
     run fc-cache -f
+  fi
+
+  # GNOME Terminal のプロファイルフォントに Nerd Font を直接指定する。
+  # システム等幅フォントのままだと丸カプセル記号（/）だけフォールバック
+  # 描画になり、セル高と合わず上部が欠ける。手動でフォントを変えている場合
+  # （use-system-font=false）は尊重して触らない。
+  if command -v gsettings >/dev/null 2>&1; then
+    profile=$(gsettings get org.gnome.Terminal.ProfilesList default 2>/dev/null | tr -d "'")
+    profile_path="org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$profile/"
+    if [ -n "$profile" ] && [ "$(gsettings get "$profile_path" use-system-font 2>/dev/null)" = "true" ]; then
+      echo "GNOME Terminal のフォントを JetBrainsMono Nerd Font に設定中..."
+      run gsettings set "$profile_path" font 'JetBrainsMono Nerd Font 12'
+      run gsettings set "$profile_path" use-system-font false
+    fi
   fi
 fi
 
@@ -337,4 +353,8 @@ if is_wsl; then
   echo "【WSL】アイコン表示には Windows Terminal のフォント変更が必要:"
   echo "  設定 → プロファイル → 外観 → フォント → 'Cascadia Code NF'（Windows 11 標準搭載）"
   echo "  無ければ JetBrainsMono Nerd Font を Windows にインストールして指定する"
+  echo
+  echo "【WSL】改行キーを Ubuntu Desktop と揃える（Alt+Enter に統一）:"
+  echo "  Windows Terminal の設定 → 操作 → 'Alt+Enter'（全画面切り替え）のバインドを削除"
+  echo "  （GNOME Terminal は Ctrl+Enter を Enter と区別できないため Alt+Enter に寄せる）"
 fi
