@@ -86,11 +86,11 @@ check_cmd node "node (Mason の LSP サーバ実行に必要)"
 check_cmd claude "Claude Code (claude)"
 check_cmd codex "Codex CLI (codex)"
 check_cmd copilot "GitHub Copilot CLI (copilot)"
-implementer="${DEV_IMPLEMENTER:-codex}"
-if command -v "$implementer" >/dev/null 2>&1; then
-  ok "pane2 実装エージェント: $implementer（DEV_IMPLEMENTER で切替可）"
+player="${DEV_PLAYER:-codex}"
+if command -v "$player" >/dev/null 2>&1; then
+  ok "pane2 プレイヤー: $player（DEV_PLAYER で切替可）"
 else
-  warn "pane2 実装エージェント ${implementer} が見つかりません（DEV_IMPLEMENTER=codex か =copilot に切替、または該当 CLI を導入）"
+  warn "pane2 プレイヤー ${player} が見つかりません（DEV_PLAYER=codex か =copilot に切替、または該当 CLI を導入）"
 fi
 
 bold "リンク（対応表: scripts/lib.sh）"

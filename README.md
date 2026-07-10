@@ -3,10 +3,10 @@
 AI エージェント並列運用を前提とした開発環境の dotfiles。
 
 - **対象環境**: Ubuntu (WSL2) / Ubuntu Desktop
-- **ツール**: zsh + starship, tmux (tmux-dotbar), Neovim (LazyVim), Claude Code, 実装エージェント（Codex CLI または GitHub Copilot CLI）
+- **ツール**: zsh + starship, tmux (tmux-dotbar), Neovim (LazyVim), Claude Code, プレイヤー（Codex CLI または GitHub Copilot CLI）
 - **思想**:
-  - 1 プロジェクト = 1 tmux セッション。`dev` 一発で 3 ペイン（Claude Code / 実装エージェント / nvim）が立ち上がる
-  - Claude Code = 設計・監督、実装エージェント（個人用は Codex、会社支給機は GitHub Copilot CLI）= 実装。最終判断は人間
+  - 1 プロジェクト = 1 tmux セッション。`dev` 一発で 4 ペイン（Claude Code / プレイヤー / nvim / shell）が立ち上がる
+  - Claude Code = 設計・マネジメント（マネージャー）、プレイヤー（個人用は Codex、会社支給機は GitHub Copilot CLI）= 実装。最終判断は人間
   - AI への指示ファイルは単一正本（`agents/AGENTS.md`）から全ツールへリンク。編集は 1 箇所
   - 依存は負債。プラグインマネージャ（oh-my-zsh / TPM）は使わず、apt パッケージと直接 clone で構成
 
@@ -37,7 +37,7 @@ dev doctor                   # 健全性チェック
 | `dev up <path>` | 指定パスのプロジェクトを開く |
 | `dev ls` | dev セッション一覧 |
 | `dev kill [name]` | セッション削除（`--all` で全部） |
-| `dev send <agent> <msg>` | claude / impl ペインへメッセージ送信（`-` で標準入力) |
+| `dev send <agent> <msg>` | claude / player ペインへメッセージ送信（`-` で標準入力) |
 | `dev peek <agent> [-n N]` | エージェントペインの直近出力を表示 |
 | `dev init` / `dev clean` | プロジェクトの AI 設定ファイルを配置 / 削除 |
 | `dev install` / `dev uninstall` / `dev doctor` | dotfiles 自体の管理 |
@@ -45,29 +45,35 @@ dev doctor                   # 健全性チェック
 ### セッションレイアウト
 
 ```
-+------------------+------------------+
-| claude (監督)    | 実装エージェント |
-|                  +------------------+
-|                  | nvim             |
-+------------------+------------------+
++--------------------------+------------------+------------------+
+|                          | プレイヤー       |                  |
+| claude (マネージャー)    +------------------+ nvim             |
+|                          | shell            |                  |
++--------------------------+------------------+------------------+
 ```
 
-- ペイン 2 の実装エージェントは既定で `codex`。`~/.zshrc.local` に
-  `export DEV_IMPLEMENTER=copilot` と書くと GitHub Copilot CLI に切り替わる
+claude と nvim は作業中ずっと見続けるので全高、プレイヤーと shell は
+`dev peek`/`dev status` 越し・実行したら用済みの随時チェックなペインなので
+中央列に同居させている。
+
+- ペイン 2 のプレイヤーは既定で `codex`。`~/.zshrc.local` に
+  `export DEV_PLAYER=copilot` と書くと GitHub Copilot CLI に切り替わる
   （会社支給機など Codex を使わない環境向け）
-- ペイン 3 は常に nvim（フォールバック判定なし）
+- ペイン 3（shell）は素の状態で立ち上がる。git 操作など手動で叩きたい作業用で、
+  `dev send`/`dev peek`/`dev status` の対象にはならない
+- ペイン 4（右列）は常に nvim（フォールバック判定なし）
 - 別プロジェクトで `dev` すれば別セッション。同名ディレクトリは `-2` `-3`... で共存
 - レイアウトを壊したら `dev kill && dev` で作り直す（自動修復はしない）
 
 ### AI エージェント連携
 
 Claude Code に「実装して」「codex/copilot にやらせて」と頼むと、
-delegate スキルが `dev send impl` / `dev peek impl` で隣のペインの実装エージェントに
-委譲する（`impl` は実体が codex でも copilot でも自動で解決される別名）。
+delegate スキルが `dev send player` / `dev peek player` で隣のペインのプレイヤーに
+委譲する（`player` は実体が codex でも copilot でも自動で解決される別名）。
 
 - 依頼は `[FROM: Claude Code]` ヘッダ付きで送られ、受け側は完了時に `DEV_DONE` を出力する（`agents/AGENTS.md` で定義）
 - 委譲結果の承認・コミットは人間が判断する（スキルに明文化済み）
-- 手動でも使える: `git diff | dev send impl -` → `dev peek impl`
+- 手動でも使える: `git diff | dev send player -` → `dev peek player`
 
 ## AI エージェント設定
 
@@ -97,7 +103,7 @@ delegate スキルが `dev send impl` / `dev peek impl` で隣のペインの実
 
 | ファイル | 用途 |
 | --- | --- |
-| `~/.zshrc.local` | gcloud SDK、仕事用の環境変数、追加 PATH など（zshrc 末尾で source）。`export DEV_IMPLEMENTER=copilot` もここ |
+| `~/.zshrc.local` | gcloud SDK、仕事用の環境変数、追加 PATH など（zshrc 末尾で source）。`export DEV_PLAYER=copilot` もここ |
 | `~/.bashrc.local` | 同上の bash 版（bash に落ちたとき用） |
 | `~/.gitconfig.local` | user.name / user.email など |
 | `~/.codex/config.toml` | Codex の project trust 等（コピー配置なので直接編集してよい） |

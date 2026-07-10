@@ -221,7 +221,7 @@ if ! is_wsl; then
   fi
 fi
 
-# デスクトップ通知（実装エージェントの dev report done/blocked が使う。
+# デスクトップ通知（プレイヤーの dev report done/blocked が使う。
 # WSL は WSLg 未設定だと動かないことが多いため対象外。無くても
 # dev report 自体は dotbar の色変更だけで動く）
 if ! is_wsl; then
