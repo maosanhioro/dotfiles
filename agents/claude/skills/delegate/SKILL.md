@@ -14,6 +14,7 @@ description: >
 Copilot CLI のどちらか（個人用は codex、会社支給機では copilot）。
 
 - `dev send <agent> -` : 標準入力の内容をエージェントの入力欄へ送信（複数行対応）
+- `dev status <agent>` : 状態を一語で返す（running / done / blocked: 理由 / shell）
 - `dev peek <agent> [-n N]` : エージェントのペインの直近出力を読む（既定 120 行）
 - `<agent>` には `impl` を使う（実体が codex/copilot どちらでも自動で解決される別名）。
   ユーザーが明示的に `codex`/`copilot` と言った場合はその名前をそのまま使ってよい
@@ -59,9 +60,16 @@ EOF
 
 ### 3. 完了を待つ
 
-送信後 60 秒待ってから `dev peek impl -n 40` で確認する。
-末尾付近に `DEV_DONE` / `DEV_BLOCKED` が現れるまで「60秒待機 → peek」を繰り返す（上限 10 回）。
+送信後 60 秒待ってから `dev status impl` で確認する。`running` の間は
+「60秒待機 → status」を繰り返す（上限 10 回）。peek と違い出力は一語なので、
+完了までの待機でコンテキストをほぼ消費しない。
 
+- `done` : `dev peek impl -n 40` で結果を読み、要点を要約してユーザーに報告
+- `blocked: 理由` : 理由をそのままユーザーに報告し、指示を仰ぐ
+- `shell` : CLI が終了している。`dev peek impl -n 40` で最後の出力を確認して報告
+- `running` が 5 回続いたら一度だけ `dev peek impl -n 40` で `DEV_DONE`/`DEV_BLOCKED`
+  が出ていないか目視確認する（実装エージェントが dev report の実行に失敗した場合の
+  縮退経路。文字列があれば status の値より優先してよい）
 - 上限に達したら、最後の peek 結果を要約してユーザーに報告し、指示を仰ぐ
 - peek の出力を全文貼らず、要点だけ要約する
 

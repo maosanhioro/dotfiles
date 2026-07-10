@@ -22,6 +22,8 @@ AI エージェント連携:
                           impl は実装担当（実体は codex か copilot。DEV_IMPLEMENTER で切替）
                           msg が - なら標準入力（複数行はこちら）
   dev peek <agent> [-n N] ペインの直近出力を表示（既定 120 行）
+  dev status <agent>      エージェントの状態を一語で表示
+                          (running / done / blocked: 理由 / shell)
   dev report done         実装エージェントが完了を報告（実装ペイン内で実行）
   dev report blocked '理由' 実装エージェントが続行不能を報告（同上）
 
@@ -208,6 +210,15 @@ check_agent_arg() {
   esac
 }
 
+# CLI が終了してシェルに戻ったペインか
+# （このシェル名リストは tmux/dotbar-right.sh の稼働判定と対で、変えるときは両方）
+is_shell_command() {
+  case "$1" in
+    bash | zsh | sh | dash | fish) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 resolve_agent_pane() {
   local session="$1" agent="$2" pane
   pane="$(find_agent_pane "$session" "$agent")"
@@ -233,17 +244,15 @@ cmd_send() {
   pane="$(resolve_agent_pane "$session" "$agent")"
 
   # CLI が終了したペインへ送るとシェルコマンドとして実行されてしまうため必ず拒否する
-  # （このシェル名リストは tmux/dotbar-right.sh の稼働判定と対で、変えるときは両方）
   current="$(tmux display-message -p -t "$pane" '#{pane_current_command}')"
-  case "$current" in
-    bash | zsh | sh | dash | fish)
-      die "${agent} ペインはシェルに戻っています（CLI 未起動/終了済み）。ペインで ${agent} を起動してください"
-      ;;
-  esac
+  if is_shell_command "$current"; then
+    die "${agent} ペインはシェルに戻っています（CLI 未起動/終了済み）。ペインで ${agent} を起動してください"
+  fi
 
-  # 新しいタスクを送るので前タスクの dev report 状態（done/blocked）をクリアする
-  # （残ったままだと dotbar が前のタスクの完了/停止色を出し続ける）
+  # 新しいタスクを送るので前タスクの dev report 状態（done/blocked/理由）をクリアする
+  # （残ったままだと dotbar と dev status が前のタスクの結果を返し続ける）
   tmux set-option -p -t "$pane" @dev_status ""
+  tmux set-option -p -t "$pane" @dev_reason ""
 
   if [ "${msg//$'\n'/}" != "$msg" ]; then
     # 改行を send-keys で送ると TUI が1行目で送信確定するため bracketed paste で渡す
@@ -255,6 +264,38 @@ cmd_send() {
   sleep 0.3 # ペースト処理が終わる前の Enter は取りこぼされることがある
   tmux send-keys -t "$pane" Enter
   echo "${session} の ${agent} ペインへ送信しました"
+}
+
+# エージェントの状態を一語で返す。監督役（Claude Code）が委譲タスクの完了を
+# 待つときに peek（画面 40 行の取り込み）の代わりに読む軽量経路。
+#   running        CLI 稼働中（報告なし）
+#   done           dev report done による完了報告あり
+#   blocked: 理由  dev report blocked による停止報告あり
+#   shell          CLI が終了してシェルに戻っている
+cmd_status() {
+  require_tmux
+  local agent="${1:-}" session pane state cmd reason
+  check_agent_arg "$agent"
+  session="$(target_session)"
+  pane="$(resolve_agent_pane "$session" "$agent")"
+  state="$(tmux show-options -p -qv -t "$pane" @dev_status)"
+  case "$state" in
+    done)
+      echo "done"
+      ;;
+    blocked)
+      reason="$(tmux show-options -p -qv -t "$pane" @dev_reason)"
+      echo "blocked${reason:+: $reason}"
+      ;;
+    *)
+      cmd="$(tmux display-message -p -t "$pane" '#{pane_current_command}')"
+      if is_shell_command "$cmd"; then
+        echo "shell"
+      else
+        echo "running"
+      fi
+      ;;
+  esac
 }
 
 # 実装エージェント自身が完了/停止を報告する（AGENTS.md のプロトコルで実行を指示）。
@@ -271,6 +312,7 @@ cmd_report() {
   [ -n "$agent" ] || die "このペインは dev のエージェントペインではありません（@dev_agent 未設定）"
 
   tmux set-option -p -t "$TMUX_PANE" @dev_status "$state"
+  tmux set-option -p -t "$TMUX_PANE" @dev_reason "$reason" # done時は空で前回の理由を消す
   session="$(tmux display-message -p -t "$TMUX_PANE" '#{session_name}')"
   if command -v notify-send >/dev/null 2>&1; then
     if [ "$state" = "done" ]; then
@@ -311,6 +353,7 @@ case "$SUBCOMMAND" in
   kill) cmd_kill "$@" ;;
   send) cmd_send "$@" ;;
   peek) cmd_peek "$@" ;;
+  status) cmd_status "$@" ;;
   report) cmd_report "$@" ;;
   init) exec "$REPO_DIR/scripts/init.sh" "$@" ;;
   clean) exec "$REPO_DIR/scripts/clean.sh" "$@" ;;

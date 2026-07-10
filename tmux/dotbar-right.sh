@@ -49,7 +49,7 @@ if [ -n "$SESSION" ]; then
     if [ "$status" = "blocked" ]; then
       color="$C_BLOCKED"
     else
-      # このシェル名リストは bin/dev cmd_send の送信ガードと対で、変えるときは両方
+      # このシェル名リストは bin/dev の is_shell_command と対で、変えるときは両方
       case "$cmd" in
         bash | zsh | sh | dash | fish) color="$C_OFF" ;;
         *) [ "$status" = "done" ] && color="$C_DONE" || color="$C_ON" ;;
