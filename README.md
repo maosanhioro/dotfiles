@@ -22,10 +22,10 @@ dev doctor                   # 健全性チェック
 
 初回の nvim 起動時に LazyVim がプラグインを自動導入する（数分）。
 
-**フォント**: starship / tmux-dotbar / eza のアイコン表示には Nerd Font が必要。
+**フォント**: starship / tmux-dotbar / eza のアイコン表示には Nerd Font が必要。インストールは dotfiles の範囲外なので、好きな Nerd Font（例: PlemolJP NF）を各 OS に手動導入し、端末のフォント設定で指定する。
 
-- WSL: Windows Terminal の設定 → プロファイル → 外観 → フォントを **Cascadia Code NF**（Windows 11 標準搭載）にする。無ければ JetBrainsMono Nerd Font を Windows にインストール
-- Ubuntu Desktop: install.sh が JetBrainsMono Nerd Font を自動導入するので、端末のフォント設定で選ぶ
+- WSL: Windows 側に Nerd Font をインストールし、Windows Terminal の設定 → プロファイル → 外観 → フォントで指定
+- Ubuntu Desktop: Nerd Font をインストールし、端末のフォント設定で指定
 
 ## dev コマンド
 

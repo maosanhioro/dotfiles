@@ -209,36 +209,6 @@ elif [ "$FORCE" -eq 1 ]; then
   run git -C "$DOTBAR_DIR" pull --ff-only
 fi
 
-############################################
-# Nerd Font（starship / dotbar のアイコン表示に必要）
-# WSL はフォントが Windows 側のため自動化できない（完了メッセージで案内）
-############################################
-if ! is_wsl; then
-  command -v fc-list >/dev/null 2>&1 || apt_install fontconfig
-  if ! fc-list 2>/dev/null | grep -qi 'JetBrainsMono Nerd Font'; then
-    echo "JetBrainsMono Nerd Font をインストール中..."
-    run mkdir -p "$HOME/.local/share/fonts/JetBrainsMonoNerd"
-    run curl -fsSL -o /tmp/JetBrainsMono.zip "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip"
-    run unzip -o /tmp/JetBrainsMono.zip -d "$HOME/.local/share/fonts/JetBrainsMonoNerd"
-    run rm -f /tmp/JetBrainsMono.zip
-    run fc-cache -f
-  fi
-
-  # GNOME Terminal のプロファイルフォントに Nerd Font を直接指定する。
-  # システム等幅フォントのままだと丸カプセル記号（/）だけフォールバック
-  # 描画になり、セル高と合わず上部が欠ける。手動でフォントを変えている場合
-  # （use-system-font=false）は尊重して触らない。
-  if command -v gsettings >/dev/null 2>&1; then
-    profile=$(gsettings get org.gnome.Terminal.ProfilesList default 2>/dev/null | tr -d "'")
-    profile_path="org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$profile/"
-    if [ -n "$profile" ] && [ "$(gsettings get "$profile_path" use-system-font 2>/dev/null)" = "true" ]; then
-      echo "GNOME Terminal のフォントを JetBrainsMono Nerd Font に設定中..."
-      run gsettings set "$profile_path" font 'JetBrainsMono Nerd Font 12'
-      run gsettings set "$profile_path" use-system-font false
-    fi
-  fi
-fi
-
 # Ubuntu Desktop 側クリップボード
 if ! is_wsl; then
   if command -v wl-copy >/dev/null 2>&1; then
@@ -360,11 +330,9 @@ echo "次の手順:"
 echo "  exec zsh       # 新しいシェルへ切り替え（次回ログインからは自動で zsh）"
 echo "  dev            # プロジェクトディレクトリで実行するとセッションが立ち上がる"
 echo "  dev doctor     # 健全性チェック"
+echo
+echo "アイコン表示には Nerd Font のインストールと端末フォント設定が必要（README のフォント節を参照）。"
 if is_wsl; then
-  echo
-  echo "【WSL】アイコン表示には Windows Terminal のフォント変更が必要:"
-  echo "  設定 → プロファイル → 外観 → フォント → 'Cascadia Code NF'（Windows 11 標準搭載）"
-  echo "  無ければ JetBrainsMono Nerd Font を Windows にインストールして指定する"
   echo
   echo "【WSL】改行キーを Ubuntu Desktop と揃える（Alt+Enter に統一）:"
   echo "  Windows Terminal の設定 → 操作 → 'Alt+Enter'（全画面切り替え）のバインドを削除"
