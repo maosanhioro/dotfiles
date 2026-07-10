@@ -35,7 +35,6 @@ LINKS=(
   "$HOME/.config/nvim|nvim"
   "$HOME/.local/bin/dev|bin/dev"
   "$HOME/.local/bin/dotbar-right|tmux/dotbar-right.sh"
-  "$HOME/.local/bin/dev-monitor|tmux/dev-monitor.sh"
   "$HOME/.claude/CLAUDE.md|agents/AGENTS.md"
   "$HOME/.claude/skills/delegate|agents/claude/skills/delegate"
   "$HOME/.codex/AGENTS.md|agents/AGENTS.md"
@@ -54,6 +53,7 @@ DOTBAR_REPO="https://github.com/vaaleyard/tmux-dotbar.git"
 LEGACY_PATHS=(
   "$HOME/.local/bin/dotfiles"
   "$HOME/.local/bin/aidev"
+  "$HOME/.local/bin/dev-monitor" # 旧ポーリング監視（dev report へ移行済み）
   "$HOME/.agents/skills/dev"
   "$HOME/.vscode-server/data/User/instructions/personal-dev-rules.instructions.md"
 )

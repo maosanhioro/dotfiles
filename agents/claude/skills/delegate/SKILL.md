@@ -49,7 +49,8 @@ dev send impl - <<'EOF'
 ## 制約
 （触ってはいけない範囲、テスト要件、コミット禁止など）
 
-完了したら最終行に「DEV_DONE」、続行不能なら「DEV_BLOCKED: 理由」とだけ出力してください。
+完了したらシェルで dev report done を実行し、最終行に「DEV_DONE」とだけ出力してください。
+続行不能なら dev report blocked '理由' を実行し、「DEV_BLOCKED: 理由」とだけ出力してください。
 EOF
 ```
 

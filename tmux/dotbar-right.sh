@@ -37,24 +37,24 @@ sep() {
 out=""
 
 # dev セッションなら各ペイン（claude / 実装エージェント / nvim）の稼働状態をドットで表示
-# （@dev_agent は bin/dev が設定。@dev_status は dev-monitor が DEV_DONE/DEV_BLOCKED
-# 検知時に設定する。CLI が終了してシェルに戻ったペインは灰色が最優先）
-# monitor ペインは @dev_agent 未設定なので -f フィルタで最初から除外する
+# （@dev_agent は bin/dev が設定。@dev_status は実装エージェントが dev report で設定する）
+# 色の優先順位: blocked（要対応）は CLI がクラッシュ/終了してシェルに戻っていても
+# 赤を維持する。done はタスク単位の状態なので CLI 終了（灰）に譲る。
+# @dev_agent 未設定のペインは -f フィルタで最初から除外する
 # （bash の read は IFS=タブでも先頭が空フィールドだと詰めてしまうため、
 #   シェル側で agent=="" を弾くのではなく tmux 側で事前に絞る）
 if [ -n "$SESSION" ]; then
   agents=""
   while IFS="$TAB" read -r agent cmd status; do
-    case "$cmd" in
-      bash | zsh | sh | dash | fish) color="$C_OFF" ;;
-      *)
-        case "$status" in
-          blocked) color="$C_BLOCKED" ;;
-          done) color="$C_DONE" ;;
-          *) color="$C_ON" ;;
-        esac
-        ;;
-    esac
+    if [ "$status" = "blocked" ]; then
+      color="$C_BLOCKED"
+    else
+      # このシェル名リストは bin/dev cmd_send の送信ガードと対で、変えるときは両方
+      case "$cmd" in
+        bash | zsh | sh | dash | fish) color="$C_OFF" ;;
+        *) [ "$status" = "done" ] && color="$C_DONE" || color="$C_ON" ;;
+      esac
+    fi
     agents="${agents}#[fg=${color}]${DOT}#[fg=${C_FG}] ${agent}  "
   done < <(tmux list-panes -s -t "=$SESSION" -f "#{@dev_agent}" -F "#{@dev_agent}${TAB}#{pane_current_command}${TAB}#{@dev_status}" 2>/dev/null)
   agents="${agents%  }"

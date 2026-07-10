@@ -22,6 +22,8 @@ AI エージェント連携:
                           impl は実装担当（実体は codex か copilot。DEV_IMPLEMENTER で切替）
                           msg が - なら標準入力（複数行はこちら）
   dev peek <agent> [-n N] ペインの直近出力を表示（既定 120 行）
+  dev report done         実装エージェントが完了を報告（実装ペイン内で実行）
+  dev report blocked '理由' 実装エージェントが続行不能を報告（同上）
 
 プロジェクト設定:
   dev init [options]      AI 設定ファイル（AGENTS.md 等）を配置
@@ -108,10 +110,11 @@ implementer_title() {
   esac
 }
 
-# 4ペイン構築: 左50% claude / 右上 実装エージェント(DEV_IMPLEMENTER) /
-# 右中 nvim / 右下 monitor（impl の DEV_DONE/DEV_BLOCKED を監視し通知する細長いペイン）
+# 3ペイン構築: 左50% claude / 右上 実装エージェント(DEV_IMPLEMENTER) / 右下 nvim
+# 完了通知は監視ペインではなく実装エージェント自身が dev report を実行して行う
+# （ペイン出力の grep 監視は、指示文のエコーやスクロールバックの残骸を誤検知する）
 build_session() {
-  local root="$1" name="$2" p1 p2 p3 p4 cols lines
+  local root="$1" name="$2" p1 p2 p3 cols lines
   cols="$(tput cols 2>/dev/null || echo 200)"
   lines="$(tput lines 2>/dev/null || echo 50)"
   tmux new-session -d -s "$name" -n main -c "$root" -x "$cols" -y "$lines"
@@ -120,16 +123,9 @@ build_session() {
   p1="$(tmux display-message -p -t "=$name:main" '#{pane_id}')"
   p2="$(tmux split-window -h -l '50%' -t "$p1" -c "$root" -P -F '#{pane_id}')"
   p3="$(tmux split-window -v -l '50%' -t "$p2" -c "$root" -P -F '#{pane_id}')"
-  p4="$(tmux split-window -v -l '20%' -t "$p3" -c "$root" -P -F '#{pane_id}')"
   setup_pane "$p1" claude claude "" # Claude Code はタスク名を動的にタイトル表示するため固定しない
   setup_pane "$p2" "$DEV_IMPLEMENTER" "$DEV_IMPLEMENTER" "$(implementer_title "$DEV_IMPLEMENTER")"
   setup_pane "$p3" nvim nvim "nvim"
-  # monitor は dotbar のドット一覧には出さない（常に稼働しっぱなしで色に意味がないため）
-  tmux select-pane -t "$p4" -T "Monitor"
-  if command -v dev-monitor >/dev/null 2>&1; then
-    tmux send-keys -t "$p4" -l -- "dev-monitor '$name'"
-    tmux send-keys -t "$p4" Enter
-  fi
   tmux select-pane -t "$p1"
 }
 
@@ -237,6 +233,7 @@ cmd_send() {
   pane="$(resolve_agent_pane "$session" "$agent")"
 
   # CLI が終了したペインへ送るとシェルコマンドとして実行されてしまうため必ず拒否する
+  # （このシェル名リストは tmux/dotbar-right.sh の稼働判定と対で、変えるときは両方）
   current="$(tmux display-message -p -t "$pane" '#{pane_current_command}')"
   case "$current" in
     bash | zsh | sh | dash | fish)
@@ -244,10 +241,9 @@ cmd_send() {
       ;;
   esac
 
-  # 新しいタスクを送るので dev-monitor の完了/停止マーカーをクリアする
-  # （残ったままだと dotbar が前のタスクの DEV_DONE 表示を出し続ける）
+  # 新しいタスクを送るので前タスクの dev report 状態（done/blocked）をクリアする
+  # （残ったままだと dotbar が前のタスクの完了/停止色を出し続ける）
   tmux set-option -p -t "$pane" @dev_status ""
-  tmux set-option -p -t "$pane" @dev_last_seen ""
 
   if [ "${msg//$'\n'/}" != "$msg" ]; then
     # 改行を send-keys で送ると TUI が1行目で送信確定するため bracketed paste で渡す
@@ -259,6 +255,31 @@ cmd_send() {
   sleep 0.3 # ペースト処理が終わる前の Enter は取りこぼされることがある
   tmux send-keys -t "$pane" Enter
   echo "${session} の ${agent} ペインへ送信しました"
+}
+
+# 実装エージェント自身が完了/停止を報告する（AGENTS.md のプロトコルで実行を指示）。
+# ペイン出力の文字列監視と違い、指示文のエコーや過去タスクの残骸を誤検知しない。
+cmd_report() {
+  require_tmux
+  local state="${1:-}" reason="${2:-}" agent session
+  case "$state" in
+    done | blocked) ;;
+    *) die "使い方: dev report done | dev report blocked '理由'" ;;
+  esac
+  [ -n "${TMUX_PANE:-}" ] || die "tmux ペイン外からは報告できません（dev セッションの実装ペイン内で実行してください）"
+  agent="$(tmux show-options -p -qv -t "$TMUX_PANE" @dev_agent)"
+  [ -n "$agent" ] || die "このペインは dev のエージェントペインではありません（@dev_agent 未設定）"
+
+  tmux set-option -p -t "$TMUX_PANE" @dev_status "$state"
+  session="$(tmux display-message -p -t "$TMUX_PANE" '#{session_name}')"
+  if command -v notify-send >/dev/null 2>&1; then
+    if [ "$state" = "done" ]; then
+      notify-send "dev: ${session}" "${agent} が完了しました"
+    else
+      notify-send -u critical "dev: ${session}" "${agent} が停止しました${reason:+: $reason}"
+    fi
+  fi
+  echo "報告しました: ${agent} → ${state}${reason:+ (${reason})}"
 }
 
 cmd_peek() {
@@ -290,6 +311,7 @@ case "$SUBCOMMAND" in
   kill) cmd_kill "$@" ;;
   send) cmd_send "$@" ;;
   peek) cmd_peek "$@" ;;
+  report) cmd_report "$@" ;;
   init) exec "$REPO_DIR/scripts/init.sh" "$@" ;;
   clean) exec "$REPO_DIR/scripts/clean.sh" "$@" ;;
   install) exec "$REPO_DIR/scripts/install.sh" "$@" ;;

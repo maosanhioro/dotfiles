@@ -251,9 +251,9 @@ if ! is_wsl; then
   fi
 fi
 
-# デスクトップ通知（dev-monitor が DEV_DONE/DEV_BLOCKED 検知時に使う。
+# デスクトップ通知（実装エージェントの dev report done/blocked が使う。
 # WSL は WSLg 未設定だと動かないことが多いため対象外。無くても
-# dev-monitor 自体はペインへのログ出力とdotbarの色変更だけで動く）
+# dev report 自体は dotbar の色変更だけで動く）
 if ! is_wsl; then
   if command -v notify-send >/dev/null 2>&1; then
     echo "notify-send を検出"
