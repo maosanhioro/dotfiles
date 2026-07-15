@@ -83,6 +83,7 @@ check_cmd bat
 check_cmd eza
 check_cmd pipx
 check_cmd node "node (Mason の LSP サーバ実行に必要)"
+check_cmd jq "jq (dev-guard-delegate hook に必要)"
 check_cmd claude "Claude Code (claude)"
 check_cmd codex "Codex CLI (codex)"
 check_cmd copilot "GitHub Copilot CLI (copilot)"
