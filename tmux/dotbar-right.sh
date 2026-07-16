@@ -36,7 +36,7 @@ sep() {
 
 out=""
 
-# dev セッションなら各ペイン（claude / プレイヤー / nvim）の稼働状態をドットで表示
+# dev セッションなら各ペイン（claude / プレイヤー）の稼働状態をドットで表示
 # （@dev_agent は bin/dev が設定。@dev_status はプレイヤーが dev report で設定する）
 # 色の優先順位: blocked（要対応）は CLI がクラッシュ/終了してシェルに戻っていても
 # 赤を維持する。done はタスク単位の状態なので CLI 終了（灰）に譲る。

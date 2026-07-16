@@ -127,26 +127,23 @@ player_cmd() {
   esac
 }
 
-# 4ペイン3列構築: 左 claude（全高）/ 中央 プレイヤー(DEV_PLAYER・上)+shell（下）/ 右 nvim（全高）
-# claude と nvim は作業中ずっと見続けるペインなので全高、プレイヤーと shell は
-# dev peek/status 越し・実行したら用済みの随時チェックなペインなので中央列に同居させる
+# 2ペイン2列構築: 左 claude（全高）/ 右 プレイヤー(DEV_PLAYER・上)+shell（下）
+# claude は作業中ずっと見続けるペインなので全高、プレイヤーと shell は
+# dev peek/status 越し・実行したら用済みの随時チェックなペインなので右列に同居させる
 # 完了通知は監視ペインではなくプレイヤー自身が dev report を実行して行う
 # （ペイン出力の grep 監視は、指示文のエコーやスクロールバックの残骸を誤検知する）
 build_session() {
-  local root="$1" name="$2" p1 p2 p3 p4 mid cols lines
+  local root="$1" name="$2" p1 p2 p4 cols lines
   cols="$(tput cols 2>/dev/null || echo 200)"
   lines="$(tput lines 2>/dev/null || echo 50)"
   tmux new-session -d -s "$name" -n main -c "$root" -x "$cols" -y "$lines"
   # set-option の -t は target-pane 解釈のため「=名前:」形式でないと解決できない
   tmux set-option -t "=${name}:" @dev_path "$root"
   p1="$(tmux display-message -p -t "=$name:main" '#{pane_id}')"
-  mid="$(tmux split-window -h -l '67%' -t "$p1" -c "$root" -P -F '#{pane_id}')"
-  p3="$(tmux split-window -h -l '50%' -t "$mid" -c "$root" -P -F '#{pane_id}')"
-  p2="$mid"
+  p2="$(tmux split-window -h -l '50%' -t "$p1" -c "$root" -P -F '#{pane_id}')"
   p4="$(tmux split-window -v -l '50%' -t "$p2" -c "$root" -P -F '#{pane_id}')"
   setup_pane "$p1" claude claude "" # Claude Code はタスク名を動的にタイトル表示するため固定しない
   setup_pane "$p2" "$DEV_PLAYER" "$(player_cmd "$DEV_PLAYER")" "$(player_title "$DEV_PLAYER")"
-  setup_pane "$p3" nvim nvim "nvim"
   # shell は agent ではないため @dev_agent は設定しない（dotbar の稼働ドット・
   # dev send/peek/status の対象一覧から意図的に除外される）
   setup_pane "$p4" "" "" "shell"
