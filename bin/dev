@@ -272,7 +272,12 @@ cmd_send() {
   else
     tmux send-keys -t "$pane" -l -- "$msg"
   fi
-  sleep 0.3 # ペースト処理が終わる前の Enter は取りこぼされることがある
+  # ペースト処理が終わる前の Enter は取りこぼされることがある。
+  # 長文ほどTUI側の描画に時間がかかるため、メッセージ長に比例させて待つ（上限2秒）。
+  # bash の整数演算のみで計算する（awk の printf はロケールにより小数点がカンマになり得るため使わない）。
+  local wait_ms=$(( 300 + ${#msg} * 100 / 1000 ))
+  (( wait_ms > 2000 )) && wait_ms=2000
+  sleep "$(printf '%d.%03d' $((wait_ms / 1000)) $((wait_ms % 1000)))"
   tmux send-keys -t "$pane" Enter
   echo "${session} の ${agent} ペインへ送信しました"
 }
