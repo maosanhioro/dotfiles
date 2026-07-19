@@ -11,7 +11,8 @@ usage() {
 使い方: dev init [options]
 
 カレントプロジェクトに AI エージェント設定を配置します:
-  AGENTS.md              プロジェクト固有ルールの正本（テンプレートからコピー）
+  AGENTS.md              正本 agents/AGENTS.md の全文 + プロジェクト固有骨子を結合して生成
+                         （Codex/Copilot 等プロジェクト直下しか読まないエージェントのため）
   CLAUDE.md              AGENTS.md へのシンボリックリンク（Claude Code 用）
   AGENT_HANDOFF_LOG.md   エージェント間の引き継ぎログ
 
@@ -49,6 +50,32 @@ place_file() {
   echo "配置: $dst"
 }
 
+place_agents_md() {
+  local master="$1" template="$2" dst="$3"
+  if [ ! -f "$master" ]; then
+    echo "正本が見つかりません: $master"
+    exit 1
+  fi
+  if [ ! -f "$template" ]; then
+    echo "テンプレートが見つかりません: $template"
+    exit 1
+  fi
+  if [ -e "$dst" ] && [ "$FORCE" -ne 1 ]; then
+    echo "スキップ（既存）: $dst  ※上書きは --force"
+    return 0
+  fi
+  if [ "$DRY_RUN" -eq 1 ]; then
+    printf '[dry-run] %s の全文 + %s を結合して書き込み: %s\n' "$master" "$template" "$dst"
+    return 0
+  fi
+  {
+    cat "$master"
+    printf '\n\n---\n\n'
+    cat "$template"
+  } >"$dst"
+  echo "配置: $dst"
+}
+
 place_link() {
   local target="$1" link="$2"
   if [ -e "$link" ] && [ ! -L "$link" ] && [ "$FORCE" -ne 1 ]; then
@@ -78,7 +105,7 @@ gitignore_add() {
   echo ".gitignore に追記: $entry"
 }
 
-place_file "$TEMPLATE_ROOT/AGENTS.md" "$DEST_DIR/AGENTS.md"
+place_agents_md "$REPO_DIR/agents/AGENTS.md" "$TEMPLATE_ROOT/AGENTS.md" "$DEST_DIR/AGENTS.md"
 gitignore_add "AGENTS.md"
 
 place_link "AGENTS.md" "$DEST_DIR/CLAUDE.md"

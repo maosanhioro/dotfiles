@@ -1,9 +1,12 @@
-# プロジェクト固有の AI エージェントルール
+# プロジェクト固有の AI エージェントルール（骨子）
 
-このファイルはプロジェクト固有のルールを定義します。
-グローバル設定（`~/.claude/CLAUDE.md` / `~/.codex/AGENTS.md` / `~/.gemini/GEMINI.md`）を上書き・補足できます。
-`CLAUDE.md` はこのファイルへのシンボリックリンクです（編集はこのファイルへ）。
-Codex CLI・GitHub Copilot CLI はこのファイルを直接読む。
+このファイルはプロジェクト固有の補足ルールのみを定義します。
+`dev init` はこのファイルを正本 `agents/AGENTS.md` の全文の後ろに結合し、
+プロジェクト直下の AGENTS.md として配置します（`CLAUDE.md` はそのシンボリックリンク、
+編集は配置後の AGENTS.md へ）。共通ルールと重複・矛盾する内容は書かないこと。
+Codex CLI はグローバル `~/.codex/AGENTS.md`（agents/AGENTS.md へのリンク）で共通ルールを
+別途読むが、GitHub Copilot CLI 等プロジェクト直下の AGENTS.md しか読まないエージェントの
+ためにここで共通ルール全文を結合している。
 
 ---
 
