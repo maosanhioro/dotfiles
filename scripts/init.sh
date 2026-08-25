@@ -14,12 +14,12 @@ usage() {
   AGENTS.md              正本 agents/AGENTS.md の全文 + プロジェクト固有骨子を結合して生成
                          （Codex/Copilot 等プロジェクト直下しか読まないエージェントのため）
   CLAUDE.md              AGENTS.md へのシンボリックリンク（Claude Code 用）
-  AGENT_HANDOFF_LOG.md   エージェント間の引き継ぎログ
+  AGENT_HANDOFF_LOG.md   エージェント間の引き継ぎログ（既存があれば --force でも保持）
 
 すべて .gitignore に追記されます（個人設定のためコミットしない前提）。
 
 オプション:
-  --force     既存ファイルがあっても上書き
+  --force     既存ファイルがあっても上書き（AGENT_HANDOFF_LOG.md は記録なので対象外）
   --dry-run   実行せずに内容だけ表示
   -h, --help  このヘルプを表示
 USAGE
@@ -36,14 +36,17 @@ done
 
 DEST_DIR="$(pwd)"
 
-place_file() {
+# 追記されていく記録ファイルを配置する。既存があれば --force でも上書きしない。
+# 設定ファイルは正本から再生成できるが、引き継ぎログは作業の記録そのもので
+# 失うと復元できないため、--force の意味（設定を最新化する）から意図的に外している
+place_once() {
   local src="$1" dst="$2"
   if [ ! -f "$src" ]; then
     echo "テンプレートが見つかりません: $src"
     exit 1
   fi
-  if [ -e "$dst" ] && [ "$FORCE" -ne 1 ]; then
-    echo "スキップ（既存）: $dst  ※上書きは --force"
+  if [ -e "$dst" ]; then
+    echo "保持（記録は上書きしない）: $dst"
     return 0
   fi
   run cp -f "$src" "$dst"
@@ -111,7 +114,7 @@ gitignore_add "AGENTS.md"
 place_link "AGENTS.md" "$DEST_DIR/CLAUDE.md"
 gitignore_add "CLAUDE.md"
 
-place_file "$TEMPLATE_ROOT/AGENT_HANDOFF_LOG.md" "$DEST_DIR/AGENT_HANDOFF_LOG.md"
+place_once "$TEMPLATE_ROOT/AGENT_HANDOFF_LOG.md" "$DEST_DIR/AGENT_HANDOFF_LOG.md"
 gitignore_add "AGENT_HANDOFF_LOG.md"
 
 echo ""

@@ -100,9 +100,13 @@ delegate スキルが `dev send player` / `dev peek player` で隣のペイン�
 | --- | --- |
 | `AGENTS.md` | プロジェクト固有ルールの正本（編集はここへ） |
 | `CLAUDE.md` | `AGENTS.md` へのリンク（Claude Code 用。Codex/Copilot は AGENTS.md を直接読む） |
-| `AGENT_HANDOFF_LOG.md` | エージェント間の引き継ぎログ |
+| `AGENT_HANDOFF_LOG.md` | エージェント間の引き継ぎログ（`--force` でも上書きされない） |
 
 すべて `.gitignore` に自動追記される（個人設定のためコミットしない）。`dev clean` で完全に元へ戻る。
+
+設定ファイルは正本から再生成できるが、引き継ぎログは作業の記録そのもので復元できない。
+そのため `dev init --force` は `AGENTS.md` を最新化してもログには触らない（消したいときは
+`dev clean` を使う）。
 
 ## マシン固有設定（Git 管理外）
 
