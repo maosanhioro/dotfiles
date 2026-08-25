@@ -9,6 +9,11 @@ TAB=$'\t'
 # DEV_IMPLEMENTER は旧名。後方互換のためフォールバックとして残す。
 DEV_PLAYER="${DEV_PLAYER:-${DEV_IMPLEMENTER:-codex}}"
 
+# dev wait の1周あたりの最大待機秒数。wait-for のイベントを取りこぼしても、
+# 相手ペインが消えても、この間隔で必ず状態を読み直して復帰できる
+# （短くすると復帰は速く tmux 呼び出しは増える。動作確認用に環境変数で上書きできる）
+DEV_WAIT_TICK_MAX="${DEV_WAIT_TICK_MAX:-60}"
+
 usage() {
   cat <<'USAGE'
 使い方: dev [subcommand] [options]
@@ -25,6 +30,9 @@ AI エージェント連携:
   dev peek <agent> [-n N] ペインの直近出力を表示（既定 120 行）
   dev status <agent>      エージェントの状態を一語で表示
                           (running / done / blocked: 理由 / shell)
+  dev wait <agent> [--timeout N]
+                          完了/停止の報告まで待つ（既定 600 秒、0 で無制限）
+                          終了コード 0:done 2:blocked 3:timeout 4:shell
   dev report done         プレイヤーが完了を報告（プレイヤーペイン内で実行）
   dev report blocked '理由' プレイヤーが続行不能を報告（同上）
 
@@ -322,6 +330,102 @@ cmd_status() {
   esac
 }
 
+# dev wait が使う待機チャネル名。鍵をペインIDにするのは、tmux サーバが %番号を
+# 再利用しないため、セッション再構築で古い残留シグナルが新しいペインへ漏れないから
+wait_channel() {
+  echo "dev-wait-$1"
+}
+
+# ペインが生きているか。消えたペインを -t に渡しても display-message や show-options は
+# 成功して空文字を返すため（tmux 3.4 で確認）、生存は一覧との照合でしか判定できない
+pane_alive() {
+  tmux list-panes -a -F '#{pane_id}' 2>/dev/null | grep -qxF -- "$1"
+}
+
+# チャネルが起こされるか secs 秒経つまで待つ。
+# timeout が無い環境では素のポーリングへ縮退する（tmux wait-for 自体はタイムアウトを
+# 持たないため、単独で使うと相手が死んだときに復帰できなくなる）
+wait_tick() {
+  local channel="$1" secs="$2"
+  if command -v timeout >/dev/null 2>&1; then
+    # 時間切れ(124)も tmux 側のエラーも区別しない。判定は呼び出し側の状態確認に任せる
+    timeout "$secs" tmux wait-for "$channel" >/dev/null 2>&1 || true
+    return 0
+  fi
+  sleep "$secs"
+}
+
+# プレイヤーの dev report を待つ。dev status のポーリングと違い報告と同時に起きる。
+# 状態の正は @dev_status のままで、wait-for は「起こす」役しか持たない。
+# そのためシグナルを取りこぼしても残留しても、起きたあとの状態確認で結論は必ず正しくなる。
+# 出力は dev status と同じ一語。終了コードで分岐できる:
+#   0 done / 2 blocked / 3 timeout / 4 shell（CLI が終了した）
+cmd_wait() {
+  require_tmux
+  local agent="${1:-}" limit=600 session pane channel state reason tick began elapsed waited=0
+  check_agent_arg "$agent"
+  shift
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --timeout | -t)
+        [ -n "${2:-}" ] || die "--timeout には秒数を指定してください（0 で無制限）"
+        case "$2" in
+          *[!0-9]*) die "--timeout は0以上の整数で指定してください: $2" ;;
+        esac
+        limit="$2"
+        shift 2
+        ;;
+      *) die "不明なオプション: $1" ;;
+    esac
+  done
+
+  session="$(target_session)"
+  pane="$(resolve_agent_pane "$session" "$agent")"
+  channel="$(wait_channel "$pane")"
+
+  while true; do
+    # wait-for は相手が消えても待ち続けるため、毎周ペインの生存から確かめる
+    pane_alive "$pane" ||
+      die "${agent} ペインが消滅しました（セッション ${session}）"
+
+    state="$(tmux show-options -p -qv -t "$pane" @dev_status)"
+    if [ "$state" = "done" ]; then
+      echo "done"
+      return 0
+    fi
+    if [ "$state" = "blocked" ]; then
+      reason="$(tmux show-options -p -qv -t "$pane" @dev_reason)"
+      echo "blocked${reason:+: $reason}"
+      return 2
+    fi
+
+    # CLI が落ちてシェルに戻っていたら dev report は永遠に来ない
+    if is_shell_command "$(tmux display-message -p -t "$pane" '#{pane_current_command}')"; then
+      echo "shell"
+      return 4
+    fi
+
+    if [ "$limit" -ne 0 ] && [ "$waited" -ge "$limit" ]; then
+      echo "timeout"
+      return 3
+    fi
+
+    tick="$DEV_WAIT_TICK_MAX"
+    if [ "$limit" -ne 0 ] && [ "$((limit - waited))" -lt "$tick" ]; then
+      tick="$((limit - waited))"
+    fi
+    began="$SECONDS"
+    wait_tick "$channel" "$tick"
+    elapsed="$((SECONDS - began))"
+    if [ "$elapsed" -le 0 ]; then
+      # 残留シグナルや tmux の即時エラーで戻ったとき busy loop にならないよう間を空ける
+      sleep 1
+      elapsed=1
+    fi
+    waited="$((waited + elapsed))"
+  done
+}
+
 # プレイヤー自身が完了/停止を報告する（AGENTS.md のプロトコルで実行を指示）。
 # ペイン出力の文字列監視と違い、指示文のエコーや過去タスクの残骸を誤検知しない。
 cmd_report() {
@@ -337,6 +441,9 @@ cmd_report() {
 
   tmux set-option -p -t "$TMUX_PANE" @dev_status "$state"
   tmux set-option -p -t "$TMUX_PANE" @dev_reason "$reason" # done時は空で前回の理由を消す
+  # 待っている dev wait を即座に起こす。状態の記録は上で済んでいるため、
+  # 起こす側の失敗で報告そのものを失敗扱いにはしない（dev wait は最大 tick 秒で自力復帰する）
+  tmux wait-for -S "$(wait_channel "$TMUX_PANE")" 2>/dev/null || true
   session="$(tmux display-message -p -t "$TMUX_PANE" '#{session_name}')"
   if command -v notify-send >/dev/null 2>&1; then
     if [ "$state" = "done" ]; then
@@ -378,6 +485,7 @@ case "$SUBCOMMAND" in
   send) cmd_send "$@" ;;
   peek) cmd_peek "$@" ;;
   status) cmd_status "$@" ;;
+  wait) cmd_wait "$@" ;;
   report) cmd_report "$@" ;;
   init) exec "$REPO_DIR/scripts/init.sh" "$@" ;;
   clean) exec "$REPO_DIR/scripts/clean.sh" "$@" ;;
