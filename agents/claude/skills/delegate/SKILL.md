@@ -16,7 +16,8 @@ description: >
 Copilot CLI のどちらか（個人用は codex、会社支給機では copilot）。
 
 - `dev send <agent> -` : 標準入力の内容をエージェントの入力欄へ送信（複数行対応）
-- `dev status <agent>` : 状態を一語で返す（running / done / blocked: 理由 / shell）
+- `dev wait <agent> [--timeout N]` : 完了/停止の報告が来るまでブロックする（既定 600 秒）
+- `dev status <agent>` : 状態を一語で返す非ブロッキング版（running / done / blocked: 理由 / shell）
 - `dev peek <agent> [-n N]` : エージェントのペインの直近出力を読む（既定 120 行）
 - `<agent>` には `player` を使う（実体が codex/copilot どちらでも自動で解決される別名）。
   ユーザーが明示的に `codex`/`copilot` と言った場合はその名前をそのまま使ってよい
@@ -62,17 +63,33 @@ EOF
 
 ### 3. 完了を待つ
 
-送信後 60 秒待ってから `dev status player` で確認する。`running` の間は
-「60秒待機 → status」を繰り返す（上限 10 回）。peek と違い出力は一語なので、
-完了までの待機でコンテキストをほぼ消費しない。
+`dev wait player` を使う。報告が来た瞬間に返るので、`dev status` を繰り返す必要はない。
+待機中は tmux を一切叩かないため、コンテキストも消費しない。
+
+**Bash ツールの timeout を `dev wait` の上限より長く設定すること**（既定 120 秒では
+`dev wait` の既定 600 秒に足りず、ツール側が先に切れる）。
+
+```bash
+dev wait player --timeout 600      # Bash ツールの timeout は 630000 のように余裕を持たせる
+```
+
+数十分かかりそうな作業は `run_in_background: true` で投げる。完了時に通知が届くので、
+待っている間に別の作業を進められる:
+
+```bash
+dev wait player --timeout 1800
+```
+
+出力（`dev status` と同じ一語）で分岐する。終了コードでも判定できる（0:done 2:blocked
+3:timeout 4:shell）:
 
 - `done` : `dev peek player -n 40` で結果を読み、要点を要約してユーザーに報告
 - `blocked: 理由` : 理由をそのままユーザーに報告し、指示を仰ぐ
 - `shell` : CLI が終了している。`dev peek player -n 40` で最後の出力を確認して報告
-- `running` が 5 回続いたら一度だけ `dev peek player -n 40` で `DEV_DONE`/`DEV_BLOCKED`
-  が出ていないか目視確認する（プレイヤーが dev report の実行に失敗した場合の
-  縮退経路。文字列があれば status の値より優先してよい）
-- 上限に達したら、最後の peek 結果を要約してユーザーに報告し、指示を仰ぐ
+- `timeout` : 上限まで報告が来なかった。`dev peek player -n 40` で状況を見て、作業が
+  続いていそうならもう一度 `dev wait` で待つ。止まっていそうならユーザーに報告して指示を仰ぐ
+- `timeout` のときは、プレイヤーが `dev report` の実行に失敗している可能性もある。
+  peek 出力に `DEV_DONE`/`DEV_BLOCKED` があればそれを優先してよい（縮退経路）
 - peek の出力を全文貼らず、要点だけ要約する
 
 ## 人間が最終判断する（最重要）

@@ -39,6 +39,8 @@ dev doctor                   # 健全性チェック
 | `dev kill [name]` | セッション削除（`--all` で全部） |
 | `dev send <agent> <msg>` | claude / player ペインへメッセージ送信（`-` で標準入力) |
 | `dev peek <agent> [-n N]` | エージェントペインの直近出力を表示 |
+| `dev status <agent>` | エージェントの状態を一語で表示（running / done / blocked / shell） |
+| `dev wait <agent>` | 完了・停止の報告まで待つ（`--timeout N`、既定 600 秒） |
 | `dev init` / `dev clean` | プロジェクトの AI 設定ファイルを配置 / 削除 |
 | `dev install` / `dev uninstall` / `dev doctor` | dotfiles 自体の管理 |
 
@@ -73,7 +75,10 @@ delegate スキルが `dev send player` / `dev peek player` で隣のペイン�
 
 - 依頼は `[FROM: Claude Code]` ヘッダ付きで送られ、受け側は完了時に `DEV_DONE` を出力する（`agents/AGENTS.md` で定義）
 - 委譲結果の承認・コミットは人間が判断する（スキルに明文化済み）
-- 手動でも使える: `git diff | dev send player -` → `dev peek player`
+- 手動でも使える: `git diff | dev send player -` → `dev wait player` → `dev peek player`
+- 完了の待ち方は 2 通り。`dev status` は状態を一語返すだけ（ポーリング用）、
+  `dev wait` は報告が来るまでブロックする。`dev wait` は tmux の `wait-for` で
+  報告と同時に起きるため、待機中は tmux を一切叩かない
 
 ## AI エージェント設定
 
