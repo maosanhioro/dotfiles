@@ -209,6 +209,9 @@ mkcd / extract / path
 - **日本語の曖昧幅文字（○△→ 等）の幅がズレる**: 端末側の曖昧幅設定を narrow（半角）にする。
   nvim 側の `ambiwidth=double` は LazyVim のアイコン UI と非互換のため使わない
 - **`dev send` が「シェルに戻っています」と言う**: 対象ペインで CLI（codex/copilot 等）を起動し直す
+- **`dev send` が「画面が変化していません」と警告する**: Enter が TUI に届かず、指示が
+  入力欄に残ったままの可能性がある（`dev send` は自動で1回だけ Enter を再送している）。
+  `dev peek` で入力欄を確認する。TUI が重いときに起きやすい
 
 ### 旧コマンドからの移行表
 
