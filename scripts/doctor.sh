@@ -30,6 +30,12 @@ if command -v tmux >/dev/null 2>&1; then
     warn "tmux $tmux_ver は古すぎます（dev コマンドは 3.1 以上が必要）"
   fi
 fi
+# dev wait はイベント待ちに timeout を使う。無くてもポーリングに縮退して動く
+if command -v timeout >/dev/null 2>&1; then
+  ok "timeout $(command -v timeout)"
+else
+  warn "timeout がありません（dev wait がポーリング動作に縮退します）"
+fi
 check_cmd nvim
 if command -v nvim >/dev/null 2>&1; then
   nvim_ver="$(nvim --version | head -n1 | awk '{print $2}' | sed 's/^v//')"
