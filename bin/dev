@@ -288,14 +288,36 @@ cmd_send() {
   else
     tmux send-keys -t "$pane" -l -- "$msg"
   fi
-  # ペースト処理が終わる前の Enter は取りこぼされることがある。
-  # 長文ほどTUI側の描画に時間がかかるため、メッセージ長に比例させて待つ（上限2秒）。
+  # ペーストの終端シーケンスと同じ読み取りチャンクに Enter が入ると、TUI はそれを
+  # 「ペースト中の改行」として扱うため送信されない。長文ほど描画に時間がかかるので
+  # メッセージ長に比例して待つ（上限3秒）。
   # bash の整数演算のみで計算する（awk の printf はロケールにより小数点がカンマになり得るため使わない）。
-  local wait_ms=$(( 300 + ${#msg} * 100 / 1000 ))
-  (( wait_ms > 2000 )) && wait_ms=2000
+  local wait_ms=$((800 + ${#msg}))
+  ((wait_ms > 3000)) && wait_ms=3000
   sleep "$(printf '%d.%03d' $((wait_ms / 1000)) $((wait_ms % 1000)))"
+
+  # Enter が効いたかを画面の変化で確かめる。送信されれば入力欄がクリアされて履歴が
+  # 伸びるため画面は必ず動く（TUI の内部構造に依存しない判定。アイドル時に再描画が
+  # 走らないことは codex/copilot で確認済み）。
+  # 変化がないときだけ再送する——無条件の二重送信は、確認プロンプトが出ていた場合に
+  # Enter がそのまま承認として解釈されてしまう
+  local before after retried=""
+  before="$(tmux capture-pane -p -t "$pane")"
   tmux send-keys -t "$pane" Enter
-  echo "${session} の ${agent} ペインへ送信しました"
+  sleep 1
+  after="$(tmux capture-pane -p -t "$pane")"
+  if [ "$after" = "$before" ]; then
+    tmux send-keys -t "$pane" Enter
+    retried="（Enter を再送）"
+    sleep 1
+    after="$(tmux capture-pane -p -t "$pane")"
+  fi
+  if [ "$after" = "$before" ]; then
+    # 断定はできない（TUI が本当に何も描画しない場合もある）ため警告にとどめる
+    echo "dev: ${agent} ペインへ送信しましたが画面が変化していません。届いていない可能性があるため dev peek ${agent} で確認してください" >&2
+    return 0
+  fi
+  echo "${session} の ${agent} ペインへ送信しました${retried}"
 }
 
 # エージェントの状態を一語で返す。マネージャー役（Claude Code）が委譲タスクの完了を
