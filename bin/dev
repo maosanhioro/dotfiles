@@ -238,7 +238,8 @@ check_agent_arg() {
 }
 
 # CLI が終了してシェルに戻ったペインか
-# （このシェル名リストは tmux/dotbar-right.sh の稼働判定と対で、変えるときは両方）
+# （このシェル名リストは tmux/dotbar-right.sh の稼働判定・tmux/pick.sh の
+# shell ペイン同定と同じもの。変えるときは3箇所とも）
 is_shell_command() {
   case "$1" in
     bash | zsh | sh | dash | fish) return 0 ;;

@@ -61,7 +61,9 @@ fi
 
 session="$(tmux display-message -p -t "$pane" '#{session_name}')"
 # shell ペインは dev build_session が @dev_agent を設定しない唯一のペイン。
-# CLI が落ちてシェルに戻ったエージェントペインを掴まないよう、その条件も併せて見る
+# CLI が落ちてシェルに戻ったエージェントペインを掴まないよう、その条件も併せて見る。
+# このシェル名リストは bin/dev の is_shell_command・tmux/dotbar-right.sh の
+# 稼働判定と同じもの。変えるときは3箇所とも
 shell_pane="$(
   tmux list-panes -s -t "=$session" \
     -F "#{pane_id}${TAB}#{@dev_agent}${TAB}#{pane_current_command}" |
