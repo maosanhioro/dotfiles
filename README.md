@@ -135,6 +135,7 @@ dotfiles/
 ├── zsh/zshrc            # メインシェル設定 + starship.toml（プロンプト）
 ├── bash/bashrc          # フォールバック用の薄い bash 設定
 ├── tmux/tmux.conf       # + tmux.wsl.conf / tmux.ubuntu.conf（クリップボード差分）
+│   └── pick.sh          # prefix + y の実体（画面の行を fzf で拾う。試用中）
 ├── git/gitconfig
 └── nvim/                # LazyVim ベース
 ```
@@ -153,6 +154,7 @@ dotfiles/
 | prefix + `\|` / `-` | 水平 / 垂直分割 |
 | prefix + `H/J/K/L` | ペインリサイズ |
 | prefix + `z` | ペインズーム（狭い画面で単独表示） |
+| prefix + `y` | 画面の行を fzf で拾う（**試用中**。Enter で shell ペインへ入力 / `Ctrl-Y` でコピーのみ / `Tab` で複数選択） |
 | prefix + `s` | セッション/ウィンドウツリー |
 | prefix + `r` | 設定再読み込み |
 | prefix + `X` / `Q` | セッション / サーバー終了（確認あり） |
