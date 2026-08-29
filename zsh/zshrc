@@ -45,11 +45,13 @@ zstyle ':completion:*:descriptions' format '%F{yellow}-- %d --%f'
 ############################################
 # fzf（Ctrl-R: 履歴検索 / Ctrl-T: ファイル / Alt-C: cd）
 ############################################
-if [ -f /usr/share/doc/fzf/examples/key-bindings.zsh ]; then
-  source /usr/share/doc/fzf/examples/key-bindings.zsh
-fi
-if [ -f /usr/share/doc/fzf/examples/completion.zsh ]; then
-  source /usr/share/doc/fzf/examples/completion.zsh
+# install.sh は apt 版 fzf を削除してバイナリ版に置き換えるため、apt 版が置く
+# /usr/share/doc/fzf/examples/* は存在せず、source する書き方では無言で不発になる。
+# バイナリ本体にキーバインドと補完を吐かせて、導入経路に依存しない形にする。
+# 2>/dev/null は `fzf --zsh` 未対応の古い版（0.48 未満）で eval にエラー文字列を
+# 食わせないため。その場合はキーバインドが無いだけで、dev doctor が版を警告する
+if command -v fzf >/dev/null 2>&1; then
+  eval "$(fzf --zsh 2>/dev/null)"
 fi
 
 ############################################
