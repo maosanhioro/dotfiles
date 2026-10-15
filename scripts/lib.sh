@@ -39,12 +39,19 @@ LINKS=(
   "$HOME/.claude/CLAUDE.md|agents/AGENTS.md"
   "$HOME/.claude/skills/delegate|agents/claude/skills/delegate"
   "$HOME/.codex/AGENTS.md|agents/AGENTS.md"
+  "$HOME/.codex/hooks.json|agents/codex/hooks.json"
+  "$HOME/.copilot/hooks/dev.json|agents/copilot/hooks/dev.json"
   "$HOME/.gemini/GEMINI.md|agents/AGENTS.md"
 )
 
 # リンクではなくコピーで配置するもの（project trust 等のローカル状態を保持するため）
 CODEX_CONFIG="$HOME/.codex/config.toml"
 CODEX_CONFIG_TEMPLATE="$REPO_DIR/agents/codex/config.toml"
+
+# Claude Code の hooks。settings.json は CLI が権限設定などを書き込むローカル状態の
+# ため、リンクせず "hooks" キーだけを install がこのファイルの内容で置き換える
+CLAUDE_SETTINGS="$HOME/.claude/settings.json"
+CLAUDE_HOOKS_TEMPLATE="$REPO_DIR/agents/claude/hooks.json"
 
 # tmux-dotbar（install が clone し、doctor が検出し、uninstall が削除する。TPM は使わない）
 DOTBAR_DIR="$HOME/.config/tmux/plugins/tmux-dotbar"

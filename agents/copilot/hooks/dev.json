@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "hooks": {
+    "userPromptSubmitted": [
+      { "type": "command", "bash": "$HOME/.local/bin/dev hook working", "timeoutSec": 5 }
+    ],
+    "postToolUse": [
+      { "type": "command", "bash": "$HOME/.local/bin/dev hook working", "timeoutSec": 5 }
+    ],
+    "permissionRequest": [
+      { "type": "command", "bash": "$HOME/.local/bin/dev hook waiting --notify", "timeoutSec": 5 }
+    ],
+    "agentStop": [
+      { "type": "command", "bash": "$HOME/.local/bin/dev hook idle", "timeoutSec": 5 }
+    ]
+  }
+}

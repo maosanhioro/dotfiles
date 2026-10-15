@@ -80,6 +80,24 @@ delegate スキルが `dev send player` / `dev peek player` で隣のペイン�
   `dev wait` は報告が来るまでブロックする。`dev wait` は tmux の `wait-for` で
   報告と同時に起きるため、待機中は tmux を一切叩かない
 
+### 状態表示と通知（hooks）
+
+3 つの CLI の hooks から `dev hook` を呼び、ステータスバーのドットと通知を自動で更新する。
+`dev report`（タスク完了の明示的な報告）とは別の状態として持つ。
+
+| 状態 | きっかけ | 表示 | 通知 |
+| --- | --- | --- | --- |
+| 作業中 | プロンプト送信・ツール実行 | 緑 ● | なし |
+| 入力待ち | 1 ターン終了（Stop） | 緑 ○ | Claude が 60 秒放置されたときだけ |
+| 承認待ち | 承認・質問のプロンプト | 橙 ● | あり |
+
+- 設定の正本: `agents/claude/hooks.json`（install が `~/.claude/settings.json` の `hooks` キーを丸ごと置き換える。
+  手で足した hook は消えるので、足すときはこのファイルへ）、`agents/codex/hooks.json`、
+  `agents/copilot/hooks/dev.json`（この 2 つはリンク）
+- Codex は hooks を初めて読み込んだときと、hooks.json を変えたあとに、Codex 内の `/hooks` で信頼の承認が要る
+- Copilot / Codex は起動時に hooks を読むため、変更後は CLI を起動し直す
+- デスクトップ通知: Ubuntu は `notify-send`、WSL は Windows の `powershell.exe` でトースト通知
+
 ## AI エージェント設定
 
 ### グローバル（install が配置）
@@ -91,6 +109,9 @@ delegate スキルが `dev send player` / `dev peek player` で隣のペイン�
 | `~/.gemini/GEMINI.md` | `agents/AGENTS.md` | シンボリックリンク |
 | `~/.claude/skills/delegate` | `agents/claude/skills/delegate` | 委譲スキル |
 | `~/.codex/config.toml` | `agents/codex/config.toml` | **コピー**（project trust 等のローカル状態を保持するため。テンプレート変更は手動反映） |
+| `~/.codex/hooks.json` | `agents/codex/hooks.json` | シンボリックリンク（状態表示の hooks） |
+| `~/.copilot/hooks/dev.json` | `agents/copilot/hooks/dev.json` | シンボリックリンク（同上） |
+| `~/.claude/settings.json` の `hooks` | `agents/claude/hooks.json` | **キー単位で置き換え**（他の設定は触らない） |
 
 正本 `agents/AGENTS.md` を編集すれば 3 ツールに即時反映される。
 
@@ -128,7 +149,9 @@ dotfiles/
 │   └── init.sh / clean.sh          # dev init / dev clean の実体
 ├── agents/
 │   ├── AGENTS.md        # グローバル AI 指示の単一正本
-│   ├── codex/config.toml
+│   ├── codex/config.toml / hooks.json
+│   ├── copilot/hooks/dev.json
+│   ├── claude/hooks.json           # ~/.claude/settings.json の hooks の正本
 │   ├── claude/skills/delegate/     # Claude Code 委譲スキル
 │   └── templates/       # dev init 用テンプレート
 ├── shell/common.sh      # bash / zsh 共通のエイリアス・関数（二重管理を防ぐ）
@@ -146,7 +169,9 @@ dotfiles/
 
 ステータスバーは tmux-dotbar。左: セッション名（prefix 押下で黄色にハイライト）、
 中央: ウィンドウ名、右: `tmux/dotbar-right.sh` が生成する情報バー
-（dev エージェント稼働 ●（緑=CLI 実行中 / 灰=シェルに戻った）・負荷・メモリ使用率・時刻。15 秒間隔で更新）。
+（dev エージェント稼働・負荷・メモリ使用率・時刻。15 秒間隔で更新）。
+エージェントのドットは、緑 ● 作業中 / 緑 ○ 入力待ち / 橙 ● 承認待ち / 黄 ● 完了報告あり /
+赤 ● 停止報告あり / 灰 ● シェルに戻った（hooks による状態は「状態表示と通知」参照）。
 
 | キー | 動作 |
 | --- | --- |

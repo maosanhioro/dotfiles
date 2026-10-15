@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      { "hooks": [{ "type": "command", "command": "$HOME/.local/bin/dev hook working", "timeout": 5 }] }
+    ],
+    "PostToolUse": [
+      { "hooks": [{ "type": "command", "command": "$HOME/.local/bin/dev hook working", "timeout": 5 }] }
+    ],
+    "PermissionRequest": [
+      { "hooks": [{ "type": "command", "command": "$HOME/.local/bin/dev hook waiting --notify", "timeout": 5 }] }
+    ],
+    "Stop": [
+      { "hooks": [{ "type": "command", "command": "$HOME/.local/bin/dev hook idle", "timeout": 5 }] }
+    ]
+  }
+}

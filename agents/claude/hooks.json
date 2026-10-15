@@ -1,0 +1,27 @@
+{
+  "PreToolUse": [
+    {
+      "matcher": "Edit|Write|MultiEdit",
+      "hooks": [{ "type": "command", "command": "__DOTFILES__/scripts/dev-guard-delegate.sh" }]
+    }
+  ],
+  "UserPromptSubmit": [
+    { "hooks": [{ "type": "command", "command": "$HOME/.local/bin/dev hook working", "timeout": 5 }] }
+  ],
+  "PostToolUse": [
+    { "hooks": [{ "type": "command", "command": "$HOME/.local/bin/dev hook working", "timeout": 5 }] }
+  ],
+  "Stop": [
+    { "hooks": [{ "type": "command", "command": "$HOME/.local/bin/dev hook idle", "timeout": 5 }] }
+  ],
+  "Notification": [
+    {
+      "matcher": "permission_prompt|elicitation_dialog",
+      "hooks": [{ "type": "command", "command": "$HOME/.local/bin/dev hook waiting --notify", "timeout": 5 }]
+    },
+    {
+      "matcher": "idle_prompt",
+      "hooks": [{ "type": "command", "command": "$HOME/.local/bin/dev hook idle --notify", "timeout": 5 }]
+    }
+  ]
+}

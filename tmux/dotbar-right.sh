@@ -24,6 +24,8 @@ C_ON="#98c379"     # CLI 稼働中のドット色
 C_OFF="#5c6370"    # シェルに戻った（停止）のドット色
 C_DONE="#e5c07b"   # dev-monitor が DEV_DONE を検知（レビュー待ち）
 C_BLOCKED="#e06c75" # dev-monitor が DEV_BLOCKED を検知（要対応）
+C_WAITING="#d19a66" # hook: 承認・回答待ち（人が対応しないと進まない）
+IDLE_DOT=$'○'       # hook: ターン終了・入力待ち（色は稼働中と同じで中抜き）
 
 seg() {
   local color="$1" content="$2"
@@ -45,7 +47,14 @@ out=""
 #   シェル側で agent=="" を弾くのではなく tmux 側で事前に絞る）
 if [ -n "$SESSION" ]; then
   agents=""
-  while IFS="$TAB" read -r agent cmd status; do
+  # @dev_attention は各 CLI の hooks が bin/dev hook 経由で設定する（未導入なら常に空）。
+  # 優先順位: blocked > シェルに戻った > waiting（承認待ち）> done > idle > 稼働中
+  # タブは IFS の空白扱いで連続すると1つに詰められ、空の status の位置に attention が
+  # ずれて入る。そのため status / attention には s: / a: を前置して空にしない
+  while IFS="$TAB" read -r agent cmd status attention; do
+    status="${status#s:}"
+    attention="${attention#a:}"
+    dot="$DOT"
     if [ "$status" = "blocked" ]; then
       color="$C_BLOCKED"
     else
@@ -53,11 +62,20 @@ if [ -n "$SESSION" ]; then
       # shell ペイン同定と同じもの。変えるときは3箇所とも
       case "$cmd" in
         bash | zsh | sh | dash | fish) color="$C_OFF" ;;
-        *) [ "$status" = "done" ] && color="$C_DONE" || color="$C_ON" ;;
+        *)
+          if [ "$attention" = "waiting" ]; then
+            color="$C_WAITING"
+          elif [ "$status" = "done" ]; then
+            color="$C_DONE"
+          else
+            color="$C_ON"
+            [ "$attention" = "idle" ] && dot="$IDLE_DOT"
+          fi
+          ;;
       esac
     fi
-    agents="${agents}#[fg=${color}]${DOT}#[fg=${C_FG}] ${agent}  "
-  done < <(tmux list-panes -s -t "=$SESSION" -f "#{@dev_agent}" -F "#{@dev_agent}${TAB}#{pane_current_command}${TAB}#{@dev_status}" 2>/dev/null)
+    agents="${agents}#[fg=${color}]${dot}#[fg=${C_FG}] ${agent}  "
+  done < <(tmux list-panes -s -t "=$SESSION" -f "#{@dev_agent}" -F "#{@dev_agent}${TAB}#{pane_current_command}${TAB}s:#{@dev_status}${TAB}a:#{@dev_attention}" 2>/dev/null)
   agents="${agents%  }"
   [ -n "$agents" ] && out="${agents}$(sep)"
 fi

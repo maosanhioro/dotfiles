@@ -35,6 +35,8 @@ AI エージェント連携:
                           終了コード 0:done 2:blocked 3:timeout 4:shell
   dev report done         プレイヤーが完了を報告（プレイヤーペイン内で実行）
   dev report blocked '理由' プレイヤーが続行不能を報告（同上）
+  dev hook <working|idle|waiting> [--notify]
+                          各 CLI の hooks から呼ぶ。ステータスバーの表示を更新
 
 プロジェクト設定:
   dev init [options]      AI 設定ファイル（AGENTS.md 等）を配置
@@ -281,6 +283,8 @@ cmd_send() {
   # （残ったままだと dotbar と dev status が前のタスクの結果を返し続ける）
   tmux set-option -p -t "$pane" @dev_status ""
   tmux set-option -p -t "$pane" @dev_reason ""
+  # hooks 未導入の環境でも前タスクの「入力待ち」表示を残さない
+  tmux set-option -p -u -t "$pane" @dev_attention 2>/dev/null || true
 
   if [ "${msg//$'\n'/}" != "$msg" ]; then
     # 改行を send-keys で送ると TUI が1行目で送信確定するため bracketed paste で渡す
@@ -518,6 +522,41 @@ cmd_report() {
   echo "報告しました: ${agent} → ${state}${reason:+ (${reason})}"
 }
 
+# 各エージェント CLI の hooks から呼ばれ、ペインの @dev_attention を更新する。
+#   working  作業中（プロンプト送信・ツール実行のたびに戻す）→ 値を消す
+#   idle     ターン終了。人かマネージャーの次の入力を待っている
+#   waiting  承認や質問への回答待ち。放置すると作業が止まったままになる
+# --notify を付けるとデスクトップ通知も出す。
+# @dev_status（dev report の done/blocked）とは別の変数にする。Stop は毎ターン
+# 発火するため、タスク完了の明示的な報告と混ぜると dev wait が誤って起きる。
+# CLI の操作を止めないよう、どんな状況でも何も出力せず 0 で終わる
+# （Codex は Stop hook の標準出力を JSON として解釈するため）。
+cmd_hook() {
+  local state="${1:-}" notify="${2:-}" agent session
+  # 標準入力に CLI からのイベント JSON が来るが読まない。読み切ろうとすると、
+  # 入力を閉じない呼び出し元で hook のタイムアウトまで止まるため
+  [ -n "${TMUX_PANE:-}" ] || return 0
+  command -v tmux >/dev/null 2>&1 || return 0
+  agent="$(tmux show-options -p -qv -t "$TMUX_PANE" @dev_agent 2>/dev/null || true)"
+  [ -n "$agent" ] || return 0
+
+  case "$state" in
+    working) tmux set-option -p -u -t "$TMUX_PANE" @dev_attention 2>/dev/null || true ;;
+    idle | waiting) tmux set-option -p -t "$TMUX_PANE" @dev_attention "$state" 2>/dev/null || true ;;
+    *) return 0 ;;
+  esac
+  # status-interval（15秒）を待たずにドットの色へ反映する
+  tmux refresh-client -S 2>/dev/null || true
+
+  [ "$notify" = "--notify" ] || return 0
+  session="$(tmux display-message -p -t "$TMUX_PANE" '#{session_name}' 2>/dev/null || true)"
+  case "$state" in
+    waiting) desktop_notify critical "dev: ${session}" "${agent} が承認・回答を待っています" ;;
+    idle) desktop_notify normal "dev: ${session}" "${agent} が入力を待っています" ;;
+  esac
+  return 0
+}
+
 cmd_peek() {
   require_tmux
   local agent="${1:-}" lines=120 session pane
@@ -550,6 +589,7 @@ case "$SUBCOMMAND" in
   status) cmd_status "$@" ;;
   wait) cmd_wait "$@" ;;
   report) cmd_report "$@" ;;
+  hook) cmd_hook "$@" ;;
   init) exec "$REPO_DIR/scripts/init.sh" "$@" ;;
   clean) exec "$REPO_DIR/scripts/clean.sh" "$@" ;;
   install) exec "$REPO_DIR/scripts/install.sh" "$@" ;;

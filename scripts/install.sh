@@ -99,6 +99,12 @@ if ! command -v rg >/dev/null 2>&1; then
   apt_install ripgrep
 fi
 
+# jq: Claude Code の hooks 設定（このスクリプト後半）と dev-guard-delegate.sh が使う
+if ! command -v jq >/dev/null 2>&1; then
+  echo "jq をインストール中..."
+  apt_install jq
+fi
+
 if ! command -v fd >/dev/null 2>&1 && ! command -v fdfind >/dev/null 2>&1; then
   echo "fd-find をインストール中..."
   apt_install fd-find
@@ -309,6 +315,28 @@ else
   echo "~/.codex/config.toml をテンプレートから作成"
   run mkdir -p "$(dirname "$CODEX_CONFIG")"
   run install -m 600 "$CODEX_CONFIG_TEMPLATE" "$CODEX_CONFIG"
+fi
+
+############################################
+# ~/.claude/settings.json の hooks（他のキーは触らない）
+############################################
+# hooks は dotfiles を正とし、丸ごと置き換える（手で足した hook は消える。
+# 足したいときは agents/claude/hooks.json に書く）。
+# __DOTFILES__ はこのリポジトリの場所に置き換える（clone 先がマシンで違ってもよいように）
+if ! command -v jq >/dev/null 2>&1; then
+  echo "jq が無いため Claude Code の hooks 設定をスキップ"
+elif [ -f "$CLAUDE_SETTINGS" ] && ! jq empty "$CLAUDE_SETTINGS" 2>/dev/null; then
+  echo "~/.claude/settings.json が JSON として読めないため hooks 設定をスキップ"
+else
+  echo "~/.claude/settings.json の hooks を設定中..."
+  claude_settings_tmp="$(mktemp)"
+  { cat "$CLAUDE_SETTINGS" 2>/dev/null || echo '{}'; } |
+    jq --arg repo "$REPO_DIR" --slurpfile hooks "$CLAUDE_HOOKS_TEMPLATE" \
+      '.hooks = ($hooks[0] | walk(if type == "string" then gsub("__DOTFILES__"; $repo) else . end))' \
+      >"$claude_settings_tmp"
+  run mkdir -p "$(dirname "$CLAUDE_SETTINGS")"
+  run mv "$claude_settings_tmp" "$CLAUDE_SETTINGS"
+  rm -f "$claude_settings_tmp"
 fi
 
 ############################################
