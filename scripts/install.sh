@@ -221,8 +221,8 @@ if ! is_wsl; then
   fi
 fi
 
-# デスクトップ通知（プレイヤーの dev report done/blocked が使う。
-# WSL は WSLg 未設定だと動かないことが多いため対象外。無くても
+# デスクトップ通知（dev report と dev hook が使う。WSL は notify-send を入れず、
+# bin/dev が Windows の powershell.exe でトースト通知を出す。無くても
 # dev report 自体は dotbar の色変更だけで動く）
 if ! is_wsl; then
   if command -v notify-send >/dev/null 2>&1; then

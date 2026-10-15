@@ -449,6 +449,48 @@ cmd_wait() {
   done
 }
 
+# WSL から Windows のトースト通知を出すための PowerShell。WSL は appendWindowsPath=false
+# で PATH に無いため絶対パスで呼ぶ（WSLg の notify-send は設定しないと届かない）
+WIN_POWERSHELL="/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
+
+# デスクトップ通知。urgency は normal / critical（notify-send の -u に渡す）。
+# 通知は付加機能なので、出せない環境や失敗は黙って諦める（呼び出し元を止めない）
+desktop_notify() {
+  local urgency="$1" title="$2" body="$3"
+  if command -v notify-send >/dev/null 2>&1; then
+    notify-send -u "$urgency" "$title" "$body" 2>/dev/null || true
+    return 0
+  fi
+  [ -x "$WIN_POWERSHELL" ] || return 0
+  notify_windows "$title" "$body"
+}
+
+# 文字列は base64 で渡して PowerShell 側で復号する。理由文などに引用符が入っても
+# スクリプトとして解釈されないようにするため。起動に約1秒かかるので待たずに戻る
+# （hook から呼ばれたとき CLI の操作を止めないため、出力も全部切り離す）
+notify_windows() {
+  local title_b64 body_b64 script
+  title_b64="$(printf '%s' "$1" | base64 -w0)"
+  body_b64="$(printf '%s' "$2" | base64 -w0)"
+  script="
+\$utf8 = [Text.Encoding]::UTF8
+\$title = \$utf8.GetString([Convert]::FromBase64String('${title_b64}'))
+\$body = \$utf8.GetString([Convert]::FromBase64String('${body_b64}'))
+[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] > \$null
+\$xml = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent([Windows.UI.Notifications.ToastTemplateType]::ToastText02)
+\$texts = \$xml.GetElementsByTagName('text')
+\$texts.Item(0).AppendChild(\$xml.CreateTextNode(\$title)) > \$null
+\$texts.Item(1).AppendChild(\$xml.CreateTextNode(\$body)) > \$null
+\$appId = '{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe'
+[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier(\$appId).Show([Windows.UI.Notifications.ToastNotification]::new(\$xml))
+"
+  (
+    "$WIN_POWERSHELL" -NoProfile -NonInteractive -EncodedCommand \
+      "$(printf '%s' "$script" | iconv -f UTF-8 -t UTF-16LE | base64 -w0)" \
+      </dev/null >/dev/null 2>&1 &
+  )
+}
+
 # プレイヤー自身が完了/停止を報告する（AGENTS.md のプロトコルで実行を指示）。
 # ペイン出力の文字列監視と違い、指示文のエコーや過去タスクの残骸を誤検知しない。
 cmd_report() {
@@ -468,12 +510,10 @@ cmd_report() {
   # 起こす側の失敗で報告そのものを失敗扱いにはしない（dev wait は最大 tick 秒で自力復帰する）
   tmux wait-for -S "$(wait_channel "$TMUX_PANE")" 2>/dev/null || true
   session="$(tmux display-message -p -t "$TMUX_PANE" '#{session_name}')"
-  if command -v notify-send >/dev/null 2>&1; then
-    if [ "$state" = "done" ]; then
-      notify-send "dev: ${session}" "${agent} が完了しました"
-    else
-      notify-send -u critical "dev: ${session}" "${agent} が停止しました${reason:+: $reason}"
-    fi
+  if [ "$state" = "done" ]; then
+    desktop_notify normal "dev: ${session}" "${agent} が完了しました"
+  else
+    desktop_notify critical "dev: ${session}" "${agent} が停止しました${reason:+: $reason}"
   fi
   echo "報告しました: ${agent} → ${state}${reason:+ (${reason})}"
 }
