@@ -10,3 +10,8 @@ model = "gpt-5.5"
 model_reasoning_effort = "medium"
 # Ubuntu 24.04: AppArmorがbwrapのネットワーク名前空間をブロックするため danger-full-access を使用
 sandbox_mode = "danger-full-access"
+
+[tui]
+# 代替画面を使わず、出力を端末（tmux）のスクロールバックに残す。
+# tmux のコピーモードや dev peek -n で、画面外に流れた過去の出力も拾えるようにするため
+alternate_screen = "never"
