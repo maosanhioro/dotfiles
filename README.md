@@ -115,15 +115,9 @@ delegate スキルが `dev send player` / `dev peek player` で隣のペイン�
 
 正本 `agents/AGENTS.md` を編集すれば 3 ツールに即時反映される。
 
-`~/.codex/config.toml` はコピーのため、既にあるマシンでは install してもテンプレートの変更が入らない。
-テンプレートとの差分を見て手で足す（`diff agents/codex/config.toml ~/.codex/config.toml`）。
-2026-10 に足した設定（出力を tmux のスクロールバックに残す）は次のとおり。既に `[tui]` があれば
-その下に `alternate_screen` の行だけ足す（同じ表を 2 回書くと Codex が起動時にエラーになる）。
-
-```toml
-[tui]
-alternate_screen = "never"
-```
+`~/.codex/config.toml` はコピーのため、既にあるマシンにはテンプレートの変更がそのままでは入らない。
+後から足した設定は install.sh が個別に補う（現在は `[tui] alternate_screen`）。テンプレートに設定を
+足したときは、install.sh の同じ箇所にも補う処理を足すこと。
 
 ### プロジェクト（dev init が配置）
 
@@ -148,10 +142,14 @@ alternate_screen = "never"
 | `~/.gitconfig.local` | user.name / user.email など |
 | `~/.codex/config.toml` | Codex の project trust 等（コピー配置なので直接編集してよい） |
 
-### Windows Terminal（WSL のマシンごとに手で設定）
+### Windows Terminal（WSL では install が自動で設定）
 
-Windows 側の設定なので dotfiles では配れない。WSL を使う Windows マシンで 1 回だけ行う
-（同じマシンにディストリを足したときは、手順 2 だけ追加分に行う）。
+WSL で `./scripts/install.sh` を実行すると、`scripts/wt-settings.py` が Windows 側の
+`settings.json` に以下を足す（設定済みの項目は触らず、書き込む前にバックアップを取る）。
+ディストリを足したときは、Windows Terminal でそのディストリを一度開いてから install を再実行する。
+
+install が「JSON として読めないため変更しません」と表示したとき（自分でコメントを書き込んだ場合など）だけ、
+以下の手順で手作業する。
 
 **できるようになること**
 - タブ名が tmux のセッション名（＝プロジェクト名）になる
@@ -219,7 +217,8 @@ dotfiles/
 ├── scripts/
 │   ├── lib.sh           # リンク対応表（install/uninstall/doctor で共有）
 │   ├── install.sh / uninstall.sh / doctor.sh
-│   └── init.sh / clean.sh          # dev init / dev clean の実体
+│   ├── init.sh / clean.sh          # dev init / dev clean の実体
+│   └── wt-settings.py   # WSL で Windows Terminal の設定を足す（install から呼ぶ）
 ├── agents/
 │   ├── AGENTS.md        # グローバル AI 指示の単一正本
 │   ├── codex/config.toml / hooks.json

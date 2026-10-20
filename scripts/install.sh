@@ -317,6 +317,50 @@ else
   run install -m 600 "$CODEX_CONFIG_TEMPLATE" "$CODEX_CONFIG"
 fi
 
+# 既存の実ファイルにはテンプレートの後から足した設定が入らないため、ここで補う。
+# alternate_screen: 出力を tmux のスクロールバックに残す（2026-10 追加）
+if [ -f "$CODEX_CONFIG" ] && ! grep -qE '^[[:space:]]*alternate_screen[[:space:]]*=' "$CODEX_CONFIG"; then
+  echo "~/.codex/config.toml に [tui] alternate_screen を追加"
+  if grep -qxF '[tui]' "$CODEX_CONFIG"; then
+    # [tui] を 2 回書くと Codex が起動時にエラーになるため、既存の表の直下に足す
+    run sed -i '/^\[tui\]$/a alternate_screen = "never"' "$CODEX_CONFIG"
+  elif [ "$DRY_RUN" -eq 1 ]; then
+    echo "[dry-run] ~/.codex/config.toml の末尾に [tui] を追記"
+  else
+    printf '\n[tui]\nalternate_screen = "never"\n' >>"$CODEX_CONFIG"
+  fi
+fi
+
+############################################
+# Windows Terminal の設定（WSL のみ。Windows 側のファイルを /mnt/c 経由で編集）
+############################################
+# タブ名をセッション名にする設定と Shift+Enter の改行。中身は scripts/wt-settings.py
+if is_wsl; then
+  win_cmd="/mnt/c/Windows/System32/cmd.exe"
+  local_appdata=""
+  if [ -x "$win_cmd" ]; then
+    # cmd.exe は WSL の作業ディレクトリが Linux 側だと警告を出すため /mnt/c から呼ぶ
+    local_appdata="$(cd /mnt/c && "$win_cmd" /c 'echo %LOCALAPPDATA%' 2>/dev/null | tr -d '\r')"
+  fi
+  if [ -z "$local_appdata" ]; then
+    echo "Windows の LOCALAPPDATA が取れないため Windows Terminal の設定をスキップ"
+  else
+    wt_found=0
+    for wt_package in Microsoft.WindowsTerminal_8wekyb3d8bbwe Microsoft.WindowsTerminalPreview_8wekyb3d8bbwe; do
+      wt_settings="$(wslpath -u "$local_appdata")/Packages/${wt_package}/LocalState/settings.json"
+      [ -f "$wt_settings" ] || continue
+      wt_found=1
+      echo "Windows Terminal（${wt_package%%_*}）の設定を確認中..."
+      if [ "$DRY_RUN" -eq 1 ]; then
+        python3 "$REPO_DIR/scripts/wt-settings.py" --dry-run "$wt_settings"
+      else
+        python3 "$REPO_DIR/scripts/wt-settings.py" "$wt_settings"
+      fi
+    done
+    [ "$wt_found" -eq 1 ] || echo "Windows Terminal の settings.json が見つからないためスキップ（一度起動すると作られる）"
+  fi
+fi
+
 ############################################
 # ~/.claude/settings.json の hooks（他のキーは触らない）
 ############################################
