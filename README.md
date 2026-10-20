@@ -150,30 +150,66 @@ alternate_screen = "never"
 
 ### Windows Terminal（WSL のマシンごとに手で設定）
 
-Windows 側の設定なので dotfiles では配れない。設定画面の左下「JSON ファイルを開く」で
-`settings.json` を開いて編集する（保存すると即反映）。
+Windows 側の設定なので dotfiles では配れない。WSL を使う Windows マシンで 1 回だけ行う
+（同じマシンにディストリを足したときは、手順 2 だけ追加分に行う）。
 
-**タブ名をセッション名にする**: 使う WSL のプロファイル（`"source": "Microsoft.WSL"` のもの）に
-1 行足す。WSL が自動生成するプロファイルは `true` になっていて、tmux からのタブ名変更が無視されるため。
+**できるようになること**
+- タブ名が tmux のセッション名（＝プロジェクト名）になる
+- Shift+Enter で、Claude Code などの入力欄の中で改行できる（Alt+Enter と同じ動き）
+
+**編集するファイル**
+
+```text
+%LOCALAPPDATA%\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json
+```
+
+Windows Terminal の設定画面（`Ctrl+,`）の左下「JSON ファイルを開く」でも同じファイルが開く。
+編集前にコピーを取っておくと、壊したときに戻せる。保存すると即反映され、再起動は不要。
+
+**手順 1. Shift+Enter のキー割り当てを足す**
+
+ファイル内の `"actions": [` の直後に、次の 1 項目を足す（後ろにカンマを付ける）。
 
 ```json
-"suppressApplicationTitle": false,
+{ "command": { "action": "sendInput", "input": "\u001b\r" }, "id": "User.shiftEnterNewline" },
 ```
 
-**Shift+Enter で改行する**: Windows Terminal は Shift+Enter を Enter と同じ文字で送るため、
-tmux の設定では区別できない。Shift+Enter に Alt+Enter と同じ文字（ESC + Enter）を送らせる。
-全タブ共通で効く（zsh でも Shift+Enter はコマンド実行ではなく改行になる）。
+同じく `"keybindings": [` の直後に、次の 2 項目を足す。
 
-```jsonc
-// "actions": [ ... ] に追加
-{ "command": { "action": "sendInput", "input": "\u001b\r" }, "id": "User.shiftEnterNewline" }
-
-// "keybindings": [ ... ] に追加（2 行目は Alt+Enter の全画面切り替えを外し、Alt+Enter でも改行できるようにする）
+```json
 { "id": "User.shiftEnterNewline", "keys": "shift+enter" },
-{ "id": null, "keys": "alt+enter" }
+{ "id": null, "keys": "alt+enter" },
 ```
 
-Ubuntu デスクトップの GNOME Terminal には同等の設定が無い。Alt+Enter で改行する。
+2 行目は Alt+Enter の既定動作（全画面切り替え）を外す設定。これで Alt+Enter でも改行できる
+（`"keys": "alt+enter"` の項目が既にあれば 2 行目は不要）。
+
+**手順 2. タブ名の上書きを許可する**
+
+`"profiles"` → `"list"` の中から、WSL のディストリの項目（`"source": "Microsoft.WSL"` があるもの）を探し、
+`"suppressApplicationTitle": false,` を 1 行足す。ディストリが複数あれば全部に足す。
+
+```json
+{
+    "guid": "{ca8057ad-...}",
+    "hidden": false,
+    "name": "Ubuntu",
+    "source": "Microsoft.WSL",
+    "suppressApplicationTitle": false
+}
+```
+
+WSL が自動で作るプロファイルではこの値が `true` になっていて、tmux からのタブ名の変更が無視される。
+ディストリを作った直後は一覧に無いことがある。そのときは Windows Terminal でそのディストリを一度開くと追加される。
+
+**確認**
+- tmux のセッション（`dev`）に入ると、タブ名がプロジェクト名になる
+- Claude Code の入力欄で Shift+Enter を押すと、送信されずに改行される
+- 保存後に Windows Terminal が設定エラーを出したら、カンマの付け忘れか付けすぎ。エラーに出る位置を直す
+
+Shift+Enter は全タブ共通で効く。zsh でも Shift+Enter はコマンド実行ではなく改行になる。
+
+Ubuntu デスクトップの GNOME Terminal には同じ設定が無いので、改行は Alt+Enter を使う。
 
 ## ファイル構成
 
