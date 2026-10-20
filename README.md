@@ -138,6 +138,33 @@ delegate スキルが `dev send player` / `dev peek player` で隣のペイン�
 | `~/.gitconfig.local` | user.name / user.email など |
 | `~/.codex/config.toml` | Codex の project trust 等（コピー配置なので直接編集してよい） |
 
+### Windows Terminal（WSL のマシンごとに手で設定）
+
+Windows 側の設定なので dotfiles では配れない。設定画面の左下「JSON ファイルを開く」で
+`settings.json` を開いて編集する（保存すると即反映）。
+
+**タブ名をセッション名にする**: 使う WSL のプロファイル（`"source": "Microsoft.WSL"` のもの）に
+1 行足す。WSL が自動生成するプロファイルは `true` になっていて、tmux からのタブ名変更が無視されるため。
+
+```json
+"suppressApplicationTitle": false,
+```
+
+**Shift+Enter で改行する**: Windows Terminal は Shift+Enter を Enter と同じ文字で送るため、
+tmux の設定では区別できない。Shift+Enter に Alt+Enter と同じ文字（ESC + Enter）を送らせる。
+全タブ共通で効く（zsh でも Shift+Enter はコマンド実行ではなく改行になる）。
+
+```jsonc
+// "actions": [ ... ] に追加
+{ "command": { "action": "sendInput", "input": "\u001b\r" }, "id": "User.shiftEnterNewline" }
+
+// "keybindings": [ ... ] に追加（2 行目は Alt+Enter の全画面切り替えを外し、Alt+Enter でも改行できるようにする）
+{ "id": "User.shiftEnterNewline", "keys": "shift+enter" },
+{ "id": null, "keys": "alt+enter" }
+```
+
+Ubuntu デスクトップの GNOME Terminal には同等の設定が無い。Alt+Enter で改行する。
+
 ## ファイル構成
 
 ```
