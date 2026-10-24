@@ -1,9 +1,12 @@
 # dotfiles
 
 AI エージェント並列運用を前提とした開発環境の dotfiles。
+WSL / Ubuntu Desktop のどちらでも、同じ操作感の開発環境をこのリポジトリ一つで再現する。
 
 - **対象環境**: Ubuntu (WSL2) / Ubuntu Desktop
 - **ツール**: zsh + starship, tmux (tmux-dotbar), Neovim (LazyVim), Claude Code, プレイヤー（Codex CLI または GitHub Copilot CLI）
+- **範囲**: 端末の中に限らず、開発の操作感に関わるもの（端末エミュレータの設定、キーリマップ）まで含める。
+  壁紙や一般アプリの導入など、開発の操作感に関係しないものは含めない
 - **思想**:
   - 1 プロジェクト = 1 tmux セッション。`dev` 一発で 3 ペイン（Claude Code / プレイヤー / shell）が立ち上がる
   - Claude Code = 設計・マネジメント（マネージャー）、プレイヤー（個人用は Codex、会社支給機は GitHub Copilot CLI）= 実装。最終判断は人間
@@ -208,8 +211,31 @@ WSL が自動で作るプロファイルではこの値が `true` になって�
 Shift+Enter は全タブ共通で効く。zsh でも Shift+Enter はコマンド実行ではなく改行になる。
 
 Ubuntu デスクトップの GNOME Terminal には同じ設定が無いため、Shift+Enter を Alt+Enter に変換する
-xremap のルールで代用している。この設定は dotfiles の管理外（`~/.config/xremap/config.yml`）。
+xremap のルールで代用している（`xremap/config.yml`、導入手順は次節）。
 xremap が無い環境では Alt+Enter で改行する。
+
+### キーリマップ（Ubuntu Desktop: xremap）
+
+Emacs 風のカーソル移動・編集キーに、Windows 流の `Ctrl-C` / `Ctrl-V` / `Ctrl-X` を残したハイブリッド。
+端末（GNOME Terminal）は除外し、代わりに Shift+Enter の改行だけを効かせる。
+
+設定ファイル（`~/.config/xremap/config.yml`）とユーザーユニット（`~/.config/systemd/user/xremap.service`）は
+install がリンクする。xremap 本体まわりは手動で入れる（cargo と sudo が要るため install には含めない）。
+
+1. `cargo install xremap --features gnome`（`~/.cargo/bin/xremap` に入る。ユニットはこの場所を起動する）
+2. GNOME 拡張「xremap」（`xremap@k0kubun.com`）を extensions.gnome.org から入れて有効化
+   （アクティブなアプリ名を xremap に渡す。無いとアプリ別の設定が効かない）
+3. uinput を sudo 無しで使えるようにする:
+   ```bash
+   echo 'KERNEL=="uinput", GROUP="input", TAG+="uaccess"' | sudo tee /etc/udev/rules.d/input.rules
+   sudo gpasswd -a "$USER" input   # 反映には再ログインが必要
+   ```
+4. `systemctl --user enable --now xremap`
+
+設定を変えたら `systemctl --user restart xremap` で反映する（`--watch` はデバイスの抜き差しの監視で、
+設定ファイルの変更は自動では読み直さない）。アプリ名は `journalctl --user -u xremap` の
+`application:` 行で確認できる。OS アップグレードでアプリ名が変わると除外が外れる
+（Ubuntu 26.04 で `gnome-terminal-server` → `org.gnome.Terminal` になった）。
 
 ## ファイル構成
 
@@ -234,7 +260,8 @@ dotfiles/
 ├── tmux/tmux.conf       # + tmux.wsl.conf / tmux.ubuntu.conf（クリップボード差分）
 │   └── pick.sh          # prefix + y / u の実体（画面の行・URL を fzf で拾う。試用中）
 ├── git/gitconfig
-└── nvim/                # LazyVim ベース
+├── nvim/                # LazyVim ベース
+└── xremap/              # Ubuntu Desktop のキーリマップ（config.yml + ユーザーユニット）
 ```
 
 ## リファレンス

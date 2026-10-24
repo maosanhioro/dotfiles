@@ -115,6 +115,21 @@ for pair in "${LINKS[@]}"; do
   fi
 done
 
+if ! is_wsl; then
+  bold "キーリマップ（xremap。導入手順は README）"
+  # ユニットが %h/.cargo/bin/xremap を直接起動するため、PATH ではなくこの場所を見る
+  if [ -x "$HOME/.cargo/bin/xremap" ]; then
+    ok "xremap $HOME/.cargo/bin/xremap"
+  else
+    warn "xremap が見つかりません（cargo install xremap --features gnome）"
+  fi
+  if systemctl --user is-enabled xremap.service >/dev/null 2>&1; then
+    ok "xremap.service 有効"
+  else
+    warn "xremap.service が有効になっていません（systemctl --user enable --now xremap）"
+  fi
+fi
+
 bold "ローカル状態ファイル"
 if [ -L "$CODEX_CONFIG" ]; then
   warn "~/.codex/config.toml はシンボリックリンクです（project trust を保持するため通常ファイル推奨。install で移行されます）"

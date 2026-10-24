@@ -1,0 +1,50 @@
+keymap:
+  - name: Emacs like
+    application:
+      not: [gnome-terminal-server, org.gnome.Terminal]
+    remap:
+      C-b: { with_mark: left }                    # Left
+      C-f: { with_mark: right }                   # Right
+      C-p: { with_mark: up }                      # Up
+      C-n: { with_mark: down }                    # Down
+
+      C-a: { with_mark: home }                    # Beginning of line
+      C-e: { with_mark: end }                     # End of line
+
+      M-u: { with_mark: pageup }                  # Page up
+      C-u: { with_mark: pagedown }                # Page down
+
+      M-Shift-comma: { with_mark: C-home }        # Beginning of file
+      M-Shift-dot: { with_mark: C-end }           # End of file
+
+      C-j: enter                                  # New line
+
+      C-d: [delete, { set_mark: false }]          # Delete
+      C-h: [backspace, { set_mark: false }]       # Backspace
+
+      C-k: [Shift-end, C-x, { set_mark: false }]  # Kill line
+
+      C-slash: [C-z, { set_mark: false }]         # Undo
+
+      C-m: { set_mark: true }                     # Mark
+
+      C-g: [esc, { set_mark: false }]             # Cancel / Quit
+      C-s: [C-s, { set_mark: false }]             # Save
+
+      C-x: [C-x, { set_mark: false }]             # Cut
+      C-c: [C-c, { set_mark: false }]             # Copy
+      C-v: [C-v, { set_mark: false }]             # Paste
+
+      M-a: [C-a, { set_mark: false }]             # Select all
+      M-f: [C-f, { set_mark: false }]             # Find
+      M-r: [Shift-F3, { set_mark: false }]        # Find
+      M-p: [C-p, { set_mark: false }]             # Print
+
+
+  # GNOME Terminal は Shift+Enter を Enter と区別して送れないため、
+  # Windows Terminal（dotfiles の wt-settings.py）と同じく Alt+Enter（ESC + Enter）に変換して改行させる
+  - name: Terminal Shift+Enter newline
+    application:
+      only: [gnome-terminal-server, org.gnome.Terminal]
+    remap:
+      Shift-enter: M-enter

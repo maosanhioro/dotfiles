@@ -42,6 +42,9 @@ LINKS=(
   "$HOME/.codex/hooks.json|agents/codex/hooks.json"
   "$HOME/.copilot/hooks/dev.json|agents/copilot/hooks/dev.json"
   "$HOME/.gemini/GEMINI.md|agents/AGENTS.md"
+  # xremap は Ubuntu Desktop でだけ動く。WSL に張っても読まれないだけで害はないため分岐しない
+  "$HOME/.config/xremap/config.yml|xremap/config.yml"
+  "$HOME/.config/systemd/user/xremap.service|xremap/xremap.service"
 )
 
 # リンクではなくコピーで配置するもの（project trust 等のローカル状態を保持するため）
