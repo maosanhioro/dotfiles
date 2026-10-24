@@ -207,7 +207,9 @@ WSL が自動で作るプロファイルではこの値が `true` になって�
 
 Shift+Enter は全タブ共通で効く。zsh でも Shift+Enter はコマンド実行ではなく改行になる。
 
-Ubuntu デスクトップの GNOME Terminal には同じ設定が無いので、改行は Alt+Enter を使う。
+Ubuntu デスクトップの GNOME Terminal には同じ設定が無いため、Shift+Enter を Alt+Enter に変換する
+xremap のルールで代用している。この設定は dotfiles の管理外（`~/.config/xremap/config.yml`）。
+xremap が無い環境では Alt+Enter で改行する。
 
 ## ファイル構成
 
