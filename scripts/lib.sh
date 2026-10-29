@@ -36,6 +36,7 @@ LINKS=(
   "$HOME/.local/bin/dev|bin/dev"
   "$HOME/.local/bin/dotbar-right|tmux/dotbar-right.sh"
   "$HOME/.local/bin/dev-pick|tmux/pick.sh"
+  "$HOME/.local/bin/tmux-pane-info|tmux/pane-info.sh"
   "$HOME/.claude/CLAUDE.md|agents/AGENTS.md"
   "$HOME/.claude/skills/delegate|agents/claude/skills/delegate"
   "$HOME/.codex/AGENTS.md|agents/AGENTS.md"

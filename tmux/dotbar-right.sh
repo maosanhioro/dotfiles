@@ -80,12 +80,30 @@ if [ -n "$SESSION" ]; then
   [ -n "$agents" ] && out="${agents}$(sep)"
 fi
 
-load="$(cut -d' ' -f1 /proc/loadavg 2>/dev/null || echo '?')"
-mem="$(awk '/MemTotal/ {t=$2} /MemAvailable/ {a=$2} END {if (t>0) printf("%d%%",(t-a)*100/t); else print "?"}' /proc/meminfo 2>/dev/null)"
-clock="$(date +%H:%M)"
+# 使用率（0〜100）を横棒にする。高負荷（METER_ALERT% 以上）は棒を赤にして目に留まるようにする
+meter() {
+  local percent="$1" color="$2" cells="$3" on="$4" off="$5"
+  local filled=$(((percent * cells + 50) / 100))
+  [ "$filled" -gt "$cells" ] && filled="$cells"
+  [ "$percent" -ge "$METER_ALERT" ] && color="$C_BLOCKED"
+  local bar_on="" bar_off="" i
+  for ((i = 0; i < filled; i++)); do bar_on+="$on"; done
+  for ((i = filled; i < cells; i++)); do bar_off+="$off"; done
+  printf '#[fg=%s]%s#[fg=%s]%s#[default]' "$color" "$bar_on" "$C_MUTED" "$bar_off"
+}
 
-out="${out}$(seg "$C_BLUE" "${I_CPU} ${load}")$(sep)"
-out="${out}$(seg "$C_PURPLE" "${I_MEM} ${mem}")$(sep)"
+METER_ALERT=80
+WEEKDAYS=(日 月 火 水 木 金 土)
+
+load="$(cut -d' ' -f1 /proc/loadavg 2>/dev/null || echo '?')"
+# 負荷はコア数で割って使用率に揃える（load 1.0 の重さはコア数で変わるため）
+load_percent="$(awk -v l="$load" -v n="$(nproc 2>/dev/null || echo 1)" 'BEGIN {printf("%d", l*100/n)}')"
+mem_percent="$(awk '/MemTotal/ {t=$2} /MemAvailable/ {a=$2} END {if (t>0) printf("%d",(t-a)*100/t); else print 0}' /proc/meminfo 2>/dev/null)"
+read -r day weekday time < <(date '+%m/%d %w %H:%M')
+clock="${day}(${WEEKDAYS[$weekday]}) ${time}"
+
+out="${out}$(seg "$C_BLUE" "${I_CPU} ")$(meter "$load_percent" "$C_BLUE" 4 '▮' '▯')$(seg "$C_BLUE" " ${load}")$(sep)"
+out="${out}$(seg "$C_PURPLE" "${I_MEM} ")$(meter "$mem_percent" "$C_PURPLE" 5 '▰' '▱')$(seg "$C_PURPLE" " ${mem_percent}%")$(sep)"
 out="${out}$(seg "$C_CYAN" "${I_CLOCK} ${clock}")"
 
 printf '%s ' "${out}"

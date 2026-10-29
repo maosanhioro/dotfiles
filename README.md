@@ -258,6 +258,8 @@ dotfiles/
 ├── zsh/zshrc            # メインシェル設定 + starship.toml（プロンプト）
 ├── bash/bashrc          # フォールバック用の薄い bash 設定
 ├── tmux/tmux.conf       # + tmux.wsl.conf / tmux.ubuntu.conf（クリップボード差分）
+│   ├── dotbar-right.sh  # ステータスバー右側（エージェント稼働・負荷・メモリ・日時）
+│   ├── pane-info.sh     # ペイン上端の作業ディレクトリと git ブランチ
 │   └── pick.sh          # prefix + y / u の実体（画面の行・URL を fzf で拾う。試用中）
 ├── git/gitconfig
 ├── nvim/                # LazyVim ベース
@@ -268,9 +270,13 @@ dotfiles/
 
 ### tmux（prefix: `Ctrl-]`）
 
-ステータスバーは tmux-dotbar。左: セッション名（prefix 押下で黄色にハイライト）、
-中央: ウィンドウ名、右: `tmux/dotbar-right.sh` が生成する情報バー
-（dev エージェント稼働・負荷・メモリ使用率・時刻。15 秒間隔で更新）。
+ステータスバーは tmux-dotbar。左: セッション名。モード中はその表示に置き換わる
+（黄 PREFIX: prefix 押下中 / シアン COPY: コピーモード / 赤 SYNC: `prefix + C-s` の同期入力中）。
+中央: ウィンドウ名（ズーム中のウィンドウにはアイコン）、右: `tmux/dotbar-right.sh` が生成する情報バー
+（dev エージェント稼働・負荷・メモリ使用率・日時。15 秒間隔で更新）。
+負荷はコア数あたりの割合、メモリは使用率を横棒で示し、80% 以上で棒が赤になる。
+ペイン上端には番号（アクティブは青）・タイトル・作業ディレクトリ・git ブランチ
+（黄 `*` は未コミットの変更あり）を出す（`tmux/pane-info.sh`）。
 エージェントのドットは、緑 ● 作業中 / 緑 ○ 入力待ち / 橙 ● 承認待ち / 黄 ● 完了報告あり /
 赤 ● 停止報告あり / 灰 ● シェルに戻った（hooks による状態は「状態表示と通知」参照）。
 
