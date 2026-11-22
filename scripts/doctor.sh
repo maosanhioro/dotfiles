@@ -130,6 +130,20 @@ if ! is_wsl; then
   fi
 fi
 
+if is_wsl; then
+  bold "WSL interop（Windows の exe の起動。通知・スクショ貼り付けに必要）"
+  if [ -e /proc/sys/fs/binfmt_misc/WSLInterop ]; then
+    ok "WSLInterop 登録あり"
+  else
+    warn "WSLInterop が消えています（./scripts/install.sh で登録し直すか、PowerShell で wsl --shutdown）"
+  fi
+  if [ -f /etc/binfmt.d/WSLInterop.conf ]; then
+    ok "/etc/binfmt.d/WSLInterop.conf"
+  else
+    warn "/etc/binfmt.d/WSLInterop.conf がありません（systemd のディストリが起動すると interop が消える。install で作成）"
+  fi
+fi
+
 bold "ローカル状態ファイル"
 if [ -L "$CODEX_CONFIG" ]; then
   warn "~/.codex/config.toml はシンボリックリンクです（project trust を保持するため通常ファイル推奨。install で移行されます）"

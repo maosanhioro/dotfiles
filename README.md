@@ -348,6 +348,10 @@ mkcd / extract / path
   で upstream の最新バイナリに更新される（`dev doctor` で `fzf` のバージョンを確認可能）
 - **日本語の曖昧幅文字（○△→ 等）の幅がズレる**: 端末側の曖昧幅設定を narrow（半角）にする。
   nvim 側の `ambiwidth=double` は LazyVim のアイコン UI と非互換のため使わない
+- **WSL で通知が出ない・スクショを貼り付けられない・タブ名が変わらない**（`cmd.exe` を実行すると
+  「実行形式エラー」）: WSL interop が消えている。systemd が動く別のディストリが起動すると、
+  全ディストリで消える（カーネル共有のため）。そのディストリで `./scripts/install.sh` を一度実行すると
+  `/etc/binfmt.d/WSLInterop.conf` が置かれて再発しなくなる。その場しのぎは PowerShell で `wsl --shutdown`
 - **`dev send` が「シェルに戻っています」と言う**: 対象ペインで CLI（codex/copilot 等）を起動し直す
 - **`dev send` が「画面が変化していません」と警告する**: Enter が TUI に届かず、指示が
   入力欄に残ったままの可能性がある（`dev send` は自動で1回だけ Enter を再送している）。

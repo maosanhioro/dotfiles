@@ -332,6 +332,35 @@ if [ -f "$CODEX_CONFIG" ] && ! grep -qE '^[[:space:]]*alternate_screen[[:space:]
 fi
 
 ############################################
+# WSL interop（Linux から Windows の exe を起動する仕組み）の保護
+############################################
+# WSL の全ディストリは1つのカーネルを共有しており、binfmt_misc の登録も共有になる。
+# systemd が動くディストリが起動すると systemd-binfmt が登録を全消去して /etc/binfmt.d
+# の分だけ登録し直すため、WSLInterop が消えて全ディストリで cmd.exe・powershell.exe が
+# 「実行形式エラー」になる（通知・スクショ貼り付け・下の Windows Terminal 設定が全滅する）。
+# /etc/binfmt.d に WSLInterop を置けば systemd-binfmt が登録し直す側に回る
+WSL_INTEROP_REGISTER="/proc/sys/fs/binfmt_misc/register"
+WSL_INTEROP_ENTRY=":WSLInterop:M::MZ::/init:PF"
+WSL_INTEROP_CONF="/etc/binfmt.d/WSLInterop.conf"
+if is_wsl && [ "$NO_SUDO" -eq 0 ]; then
+  if [ "$(cat "$WSL_INTEROP_CONF" 2>/dev/null)" != "$WSL_INTEROP_ENTRY" ]; then
+    echo "WSL interop を systemd-binfmt から守る設定を追加: $WSL_INTEROP_CONF"
+    run ${SUDO} mkdir -p "$(dirname "$WSL_INTEROP_CONF")"
+    if [ "$DRY_RUN" -eq 0 ]; then
+      echo "$WSL_INTEROP_ENTRY" | ${SUDO} tee "$WSL_INTEROP_CONF" >/dev/null
+    fi
+  fi
+  # すでに消されている場合はこの場で登録し直す（wsl --shutdown でも戻る）
+  if [ ! -e /proc/sys/fs/binfmt_misc/WSLInterop ]; then
+    echo "WSL interop が無効になっているため登録し直します"
+    if [ "$DRY_RUN" -eq 0 ]; then
+      echo "$WSL_INTEROP_ENTRY" | ${SUDO} tee "$WSL_INTEROP_REGISTER" >/dev/null ||
+        echo "  登録に失敗しました。PowerShell で wsl --shutdown してから開き直してください"
+    fi
+  fi
+fi
+
+############################################
 # Windows Terminal の設定（WSL のみ。Windows 側のファイルを /mnt/c 経由で編集）
 ############################################
 # タブ名をセッション名にする設定と Shift+Enter の改行。中身は scripts/wt-settings.py
@@ -343,7 +372,7 @@ if is_wsl; then
     local_appdata="$(cd /mnt/c && "$win_cmd" /c 'echo %LOCALAPPDATA%' 2>/dev/null | tr -d '\r')"
   fi
   if [ -z "$local_appdata" ]; then
-    echo "Windows の LOCALAPPDATA が取れないため Windows Terminal の設定をスキップ"
+    echo "Windows の LOCALAPPDATA が取れないため Windows Terminal の設定をスキップ（cmd.exe が起動できない。WSL interop を確認）"
   else
     wt_found=0
     for wt_package in Microsoft.WindowsTerminal_8wekyb3d8bbwe Microsoft.WindowsTerminalPreview_8wekyb3d8bbwe; do
