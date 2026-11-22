@@ -28,7 +28,7 @@ short_path() {
   printf '%s' "$path"
 }
 
-printf '#[fg=%s]%s %s' "$C_PATH" "$I_FOLDER" "$(short_path "$DIR")"
+printf '#[fg=%s]%s  %s' "$C_PATH" "$I_FOLDER" "$(short_path "$DIR")"
 
 branch="$(git -C "$DIR" symbolic-ref --short -q HEAD 2>/dev/null ||
   git -C "$DIR" rev-parse --short -q HEAD 2>/dev/null)"
