@@ -33,6 +33,15 @@ if [ "$NO_SUDO" -eq 1 ]; then
   SUDO=""
 fi
 
+# 途中の sudo でパスワード入力に失敗して半端に止まらないよう、最初に一度だけ聞いておく
+if [ "$NO_SUDO" -eq 0 ] && [ "$DRY_RUN" -eq 0 ]; then
+  if ! sudo -v; then
+    echo "sudo の認証に失敗しました。パスワードを入力できる端末から直接実行してください" >&2
+    echo "（Claude Code の ! 経由では入力できません。sudo を使わないなら --no-sudo）" >&2
+    exit 1
+  fi
+fi
+
 echo "== dotfiles セットアップ =="
 echo "repo: $REPO_DIR"
 
