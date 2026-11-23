@@ -400,21 +400,27 @@ if is_wsl; then
 fi
 
 ############################################
-# ~/.claude/settings.json の hooks（他のキーは触らない）
+# ~/.claude/settings.json の hooks と permissions.allow（他のキーは触らない）
 ############################################
 # hooks は dotfiles を正とし、丸ごと置き換える（手で足した hook は消える。
 # 足したいときは agents/claude/hooks.json に書く）。
 # __DOTFILES__ はこのリポジトリの場所に置き換える（clone 先がマシンで違ってもよいように）
+# permissions.allow は手で足したルールや「常に許可」で増えたルールを残したいので、
+# 丸ごと置き換えずに agents/claude/permissions.json の allow を足し、remove を消すだけにする。
+# remove は起動時に警告が出る旧い書き方（Edit(*) 等）を各マシンから消すためのもの
 if ! command -v jq >/dev/null 2>&1; then
-  echo "jq が無いため Claude Code の hooks 設定をスキップ"
+  echo "jq が無いため Claude Code の hooks / permissions 設定をスキップ"
 elif [ -f "$CLAUDE_SETTINGS" ] && ! jq empty "$CLAUDE_SETTINGS" 2>/dev/null; then
-  echo "~/.claude/settings.json が JSON として読めないため hooks 設定をスキップ"
+  echo "~/.claude/settings.json が JSON として読めないため hooks / permissions 設定をスキップ"
 else
-  echo "~/.claude/settings.json の hooks を設定中..."
+  echo "~/.claude/settings.json の hooks と permissions.allow を設定中..."
   claude_settings_tmp="$(mktemp)"
   { cat "$CLAUDE_SETTINGS" 2>/dev/null || echo '{}'; } |
-    jq --arg repo "$REPO_DIR" --slurpfile hooks "$CLAUDE_HOOKS_TEMPLATE" \
-      '.hooks = ($hooks[0] | walk(if type == "string" then gsub("__DOTFILES__"; $repo) else . end))' \
+    jq --arg repo "$REPO_DIR" \
+      --slurpfile hooks "$CLAUDE_HOOKS_TEMPLATE" \
+      --slurpfile perms "$CLAUDE_PERMISSIONS_TEMPLATE" \
+      '.hooks = ($hooks[0] | walk(if type == "string" then gsub("__DOTFILES__"; $repo) else . end))
+       | .permissions.allow = ((.permissions.allow // []) - $perms[0].remove - $perms[0].allow) + $perms[0].allow' \
       >"$claude_settings_tmp"
   run mkdir -p "$(dirname "$CLAUDE_SETTINGS")"
   run mv "$claude_settings_tmp" "$CLAUDE_SETTINGS"

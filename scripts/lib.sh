@@ -56,6 +56,7 @@ CODEX_CONFIG_TEMPLATE="$REPO_DIR/agents/codex/config.toml"
 # ため、リンクせず "hooks" キーだけを install がこのファイルの内容で置き換える
 CLAUDE_SETTINGS="$HOME/.claude/settings.json"
 CLAUDE_HOOKS_TEMPLATE="$REPO_DIR/agents/claude/hooks.json"
+CLAUDE_PERMISSIONS_TEMPLATE="$REPO_DIR/agents/claude/permissions.json"
 
 # tmux-dotbar（install が clone し、doctor が検出し、uninstall が削除する。TPM は使わない）
 DOTBAR_DIR="$HOME/.config/tmux/plugins/tmux-dotbar"

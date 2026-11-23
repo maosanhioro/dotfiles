@@ -115,6 +115,7 @@ delegate スキルが `dev send player` / `dev peek player` で隣のペイン�
 | `~/.codex/hooks.json` | `agents/codex/hooks.json` | シンボリックリンク（状態表示の hooks） |
 | `~/.copilot/hooks/dev.json` | `agents/copilot/hooks/dev.json` | シンボリックリンク（同上） |
 | `~/.claude/settings.json` の `hooks` | `agents/claude/hooks.json` | **キー単位で置き換え**（他の設定は触らない） |
+| `~/.claude/settings.json` の `permissions.allow` | `agents/claude/permissions.json` | **追記と削除のみ**（`allow` を足し `remove` を消す。手で足したルールは残る） |
 
 正本 `agents/AGENTS.md` を編集すれば 3 ツールに即時反映される。
 
