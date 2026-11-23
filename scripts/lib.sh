@@ -1,3 +1,4 @@
+# shellcheck disable=SC2034 # source される定義集なので、ここで使わない変数が大半
 # install.sh / uninstall.sh / doctor.sh / init.sh / clean.sh の共有定義。
 # リンク対応表をここに一元化することで、3スクリプト間の食い違い
 # （installが張るのにuninstallが外さない等）を構造的に防ぐ。

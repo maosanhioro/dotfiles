@@ -43,7 +43,7 @@ fi
 
 # ツール系ヘルパー
 path() { printf '%s\n' "${PATH}" | tr ':' '\n'; }
-mkcd() { mkdir -p "$1" && cd "$1"; }
+mkcd() { mkdir -p "$1" && cd "$1" || return; }
 extract() {
   if [ -f "$1" ]; then
     case "$1" in
@@ -93,7 +93,7 @@ if command -v fzf >/dev/null 2>&1; then
     else
       dir="$(find . -type d -name .git -prune -o -type d -print 2>/dev/null | fzf --height=40% --reverse --border)" || return
     fi
-    [ -n "${dir}" ] && cd "${dir}"
+    [ -n "${dir}" ] && { cd "${dir}" || return; }
   }
 fi
 

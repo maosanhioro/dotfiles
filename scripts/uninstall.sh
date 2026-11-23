@@ -17,6 +17,7 @@ dotfiles が張ったシンボリックリンクと tmux-dotbar を削除しま�
 USAGE
 }
 
+# shellcheck disable=SC2034 # DRY_RUN は lib.sh の run が読む
 for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY_RUN=1 ;;

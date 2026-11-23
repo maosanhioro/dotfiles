@@ -41,7 +41,7 @@ if ! bash_errors="$(bash -n "$file" 2>&1)"; then
   exit 2
 fi
 
-# shellcheck は未導入のマシンもある。無ければ構文チェックだけで済ませる（doctor が未導入を知らせる）
+# 未導入のマシンもあるので、shellcheck が無ければ構文チェックだけで済ませる（doctor が未導入を知らせる）
 command -v shellcheck >/dev/null 2>&1 || exit 0
 
 # common.sh は bash と zsh の両方から読まれるが、書き方は bash に揃えている
