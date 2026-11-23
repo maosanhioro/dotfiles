@@ -265,13 +265,24 @@ fi
 ############################################
 # シンボリックリンク（対応表は scripts/lib.sh）
 ############################################
-echo "シンボリックリンクを作成中..."
-for pair in "${LINKS[@]}"; do
-  dest="${pair%%|*}"
-  src="$REPO_DIR/${pair##*|}"
+# 既存がシンボリックリンクなら張り替える（失うものがない）。実ファイル・実ディレクトリは
+# 手で書いた設定の可能性があるので <名前>.bak.<日時> に退避してから張る。
+# ln -sfn は実ディレクトリに対して実行すると置き換えずに中へリンクを作ってしまうため、退避は必須
+link_safely() {
+  local src="$1" dest="$2" backup
   run mkdir -p "$(dirname "$dest")"
+  if [ -e "$dest" ] && [ ! -L "$dest" ]; then
+    backup="${dest}.bak.$(date +%Y%m%d%H%M%S)"
+    echo "  既存の実体を退避: $dest -> $backup"
+    run mv "$dest" "$backup"
+  fi
   run ln -sfn "$src" "$dest"
   echo "  $dest -> $src"
+}
+
+echo "シンボリックリンクを作成中..."
+for pair in "${LINKS[@]}"; do
+  link_safely "$REPO_DIR/${pair##*|}" "${pair%%|*}"
 done
 
 ############################################

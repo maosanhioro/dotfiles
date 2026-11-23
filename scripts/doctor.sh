@@ -114,6 +114,11 @@ for pair in "${LINKS[@]}"; do
   else
     ok "$dest -> $src"
   fi
+  # install が退避した元の実体。中身を確かめて不要なら消す
+  for backup in "$dest".bak.*; do
+    [ -e "$backup" ] || [ -L "$backup" ] || continue
+    info "退避された元の実体があります: $backup（中身を確認し、不要なら削除）"
+  done
 done
 
 if ! is_wsl; then

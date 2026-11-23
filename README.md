@@ -120,6 +120,9 @@ delegate スキルが `dev send player` / `dev peek player` で隣のペイン�
 | `~/.claude/settings.json` の `permissions.allow` | `agents/claude/permissions.json` | **追記と削除のみ**（`allow` を足し `remove` を消す。手で足したルールは残る） |
 | Claude Code プラグイン（user スコープ） | `agents/claude/plugins.txt` | **未導入のものだけ導入**（`claude plugin install`。一覧から消しても自動では外さず、doctor が警告する） |
 
+リンク先に実ファイル・実ディレクトリがあると、install は `<名前>.bak.<日時>` に退避してからリンクを張る
+（既存のシンボリックリンクはそのまま張り替える）。退避したものは doctor が知らせるので、中身を確かめて不要なら消す。
+
 正本 `agents/AGENTS.md` を編集すれば 4 ツール（Claude Code / Codex / Copilot CLI / Gemini）に即時反映される。
 プロジェクトの AGENTS.md には共通ルールを入れない（各ツールがグローバル設定と結合して読むため、入れると二重になる）。
 
