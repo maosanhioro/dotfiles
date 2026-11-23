@@ -109,6 +109,7 @@ delegate スキルが `dev send player` / `dev peek player` で隣のペイン�
 | --- | --- | --- |
 | `~/.claude/CLAUDE.md` | `agents/AGENTS.md` | シンボリックリンク |
 | `~/.codex/AGENTS.md` | `agents/AGENTS.md` | シンボリックリンク |
+| `~/.copilot/copilot-instructions.md` | `agents/AGENTS.md` | シンボリックリンク（Copilot CLI のユーザー単位の指示） |
 | `~/.gemini/GEMINI.md` | `agents/AGENTS.md` | シンボリックリンク |
 | `~/.claude/skills/delegate` | `agents/claude/skills/delegate` | 委譲スキル |
 | `~/.claude/plugins-optional.md` | `agents/claude/plugins-optional.md` | プロジェクトごとに入れる拡張の候補一覧（作業が当てはまると Claude が導入を提案する） |
@@ -119,7 +120,8 @@ delegate スキルが `dev send player` / `dev peek player` で隣のペイン�
 | `~/.claude/settings.json` の `permissions.allow` | `agents/claude/permissions.json` | **追記と削除のみ**（`allow` を足し `remove` を消す。手で足したルールは残る） |
 | Claude Code プラグイン（user スコープ） | `agents/claude/plugins.txt` | **未導入のものだけ導入**（`claude plugin install`。一覧から消しても自動では外さず、doctor が警告する） |
 
-正本 `agents/AGENTS.md` を編集すれば 3 ツールに即時反映される。
+正本 `agents/AGENTS.md` を編集すれば 4 ツール（Claude Code / Codex / Copilot CLI / Gemini）に即時反映される。
+プロジェクトの AGENTS.md には共通ルールを入れない（各ツールがグローバル設定と結合して読むため、入れると二重になる）。
 
 `~/.codex/config.toml` はコピーのため、既にあるマシンにはテンプレートの変更がそのままでは入らない。
 後から足した設定は install.sh が個別に補う（現在は `[tui] alternate_screen`）。テンプレートに設定を
@@ -129,7 +131,7 @@ delegate スキルが `dev send player` / `dev peek player` で隣のペイン�
 
 | 配置物 | 実体 |
 | --- | --- |
-| `AGENTS.md` | プロジェクト固有ルールの正本（編集はここへ） |
+| `AGENTS.md` | プロジェクト固有ルールの正本（編集はここへ）。共通ルールは含まない |
 | `CLAUDE.md` | `AGENTS.md` へのリンク（Claude Code 用。Codex/Copilot は AGENTS.md を直接読む） |
 | `AGENT_HANDOFF_LOG.md` | エージェント間の引き継ぎログ（`--force` でも上書きされない） |
 
@@ -138,6 +140,10 @@ delegate スキルが `dev send player` / `dev peek player` で隣のペイン�
 設定ファイルは正本から再生成できるが、引き継ぎログは作業の記録そのもので復元できない。
 そのため `dev init --force` は `AGENTS.md` を最新化してもログには触らない（消したいときは
 `dev clean` を使う）。
+
+`dev init --force` が最新化するのは `AGENTS.md` の説明部分（最初の `##` より前）だけで、書き込んだ各節は残る。
+共通ルールを前に結合していた旧形式の `AGENTS.md` も、同じ操作で固有ルールだけに移行される。
+固有ルールの見出し（`# プロジェクト固有の AI エージェントルール`）が無いファイルは上書きしない。
 
 ## マシン固有設定（Git 管理外）
 

@@ -11,15 +11,15 @@ usage() {
 使い方: dev init [options]
 
 カレントプロジェクトに AI エージェント設定を配置します:
-  AGENTS.md              正本 agents/AGENTS.md の全文 + プロジェクト固有骨子を結合して生成
-                         （Codex/Copilot 等プロジェクト直下しか読まないエージェントのため）
+  AGENTS.md              プロジェクト固有ルールの骨子（共通ルールは各ツールのグローバル設定から読む）。
+                         --force は説明部分だけを最新化し、書き込んだ各節は残す
   CLAUDE.md              AGENTS.md へのシンボリックリンク（Claude Code 用）
   AGENT_HANDOFF_LOG.md   エージェント間の引き継ぎログ（既存があれば --force でも保持）
 
 すべて .gitignore に追記されます（個人設定のためコミットしない前提）。
 
 オプション:
-  --force     既存ファイルがあっても上書き（AGENT_HANDOFF_LOG.md は記録なので対象外）
+  --force     既存ファイルを最新化（AGENTS.md は各節を保持。AGENT_HANDOFF_LOG.md は記録なので対象外）
   --dry-run   実行せずに内容だけ表示
   -h, --help  このヘルプを表示
 USAGE
@@ -53,30 +53,60 @@ place_once() {
   echo "配置: $dst"
 }
 
+# 共通ルールは各ツールがグローバル設定（install が張るリンク）から読むため、
+# プロジェクトの AGENTS.md には固有ルールだけを置く。--force は説明部分（最初の "## " より前）だけを
+# 最新のテンプレートに差し替え、ユーザーが書いた各節は残す。旧形式（共通ルールを前に結合していたもの）も
+# 固有ルールの見出しを目印に同じ処理で移行される
 place_agents_md() {
-  local master="$1" template="$2" dst="$3"
-  if [ ! -f "$master" ]; then
-    echo "正本が見つかりません: $master"
-    exit 1
-  fi
+  local template="$1" dst="$2"
   if [ ! -f "$template" ]; then
     echo "テンプレートが見つかりません: $template"
     exit 1
   fi
-  if [ -e "$dst" ] && [ "$FORCE" -ne 1 ]; then
-    echo "スキップ（既存）: $dst  ※上書きは --force"
+
+  if [ ! -e "$dst" ]; then
+    run cp -f "$template" "$dst"
+    echo "配置: $dst"
     return 0
   fi
+
+  local marker_line
+  marker_line="$(grep -n -m1 "^${PROJECT_RULES_MARKER}" "$dst" | cut -d: -f1 || true)"
+
+  if [ "$FORCE" -ne 1 ]; then
+    if [ -n "$marker_line" ] && [ "$marker_line" -gt 1 ]; then
+      echo "スキップ（既存）: $dst  ※共通ルールを結合した旧形式。dev init --force で固有ルールだけに移行できる（各節は残る）"
+    else
+      echo "スキップ（既存）: $dst  ※説明部分の最新化は --force（各節は残る）"
+    fi
+    return 0
+  fi
+
+  # 目印が無いファイルは何が書かれているか分からないため、--force でも上書きしない
+  if [ -z "$marker_line" ]; then
+    echo "スキップ: $dst に「${PROJECT_RULES_MARKER}」の見出しが無いため上書きしません（中身を退避してから再実行してください）"
+    return 0
+  fi
+
   if [ "$DRY_RUN" -eq 1 ]; then
-    printf '[dry-run] %s の全文 + %s を結合して書き込み: %s\n' "$master" "$template" "$dst"
+    printf '[dry-run] %s の説明部分を最新化し、%s 行目以降の各節を残す\n' "$dst" "$marker_line"
     return 0
   fi
+
+  local tmp
+  tmp="$(mktemp)"
   {
-    cat "$master"
-    printf '\n\n---\n\n'
-    cat "$template"
-  } >"$dst"
-  echo "配置: $dst"
+    # テンプレートの説明部分（最初の "## " の手前まで）
+    awk '/^## /{exit} {print}' "$template"
+    # 既存ファイルの、目印の見出しより後ろにある最初の "## " から末尾まで
+    awk -v start="$marker_line" 'NR > start && /^## /{found=1} found{print}' "$dst"
+  } >"$tmp"
+  # 既存側に "## " の節が1つも無ければ、テンプレートの各節をそのまま使う
+  if ! grep -q '^## ' "$tmp"; then
+    awk '/^## /{found=1} found{print}' "$template" >>"$tmp"
+  fi
+  mv "$tmp" "$dst"
+  echo "更新: $dst（説明部分を最新化、各節は保持）"
 }
 
 place_link() {
@@ -108,7 +138,7 @@ gitignore_add() {
   echo ".gitignore に追記: $entry"
 }
 
-place_agents_md "$REPO_DIR/agents/AGENTS.md" "$TEMPLATE_ROOT/AGENTS.md" "$DEST_DIR/AGENTS.md"
+place_agents_md "$TEMPLATE_ROOT/AGENTS.md" "$DEST_DIR/AGENTS.md"
 gitignore_add "AGENTS.md"
 
 place_link "AGENTS.md" "$DEST_DIR/CLAUDE.md"

@@ -42,6 +42,7 @@ LINKS=(
   "$HOME/.claude/skills/delegate|agents/claude/skills/delegate"
   "$HOME/.claude/plugins-optional.md|agents/claude/plugins-optional.md"
   "$HOME/.codex/AGENTS.md|agents/AGENTS.md"
+  "$HOME/.copilot/copilot-instructions.md|agents/AGENTS.md"
   "$HOME/.codex/hooks.json|agents/codex/hooks.json"
   "$HOME/.copilot/hooks/dev.json|agents/copilot/hooks/dev.json"
   "$HOME/.gemini/GEMINI.md|agents/AGENTS.md"
@@ -101,6 +102,9 @@ PROJECT_FILES_LEGACY=(
   ".github/copilot-instructions.md"
   ".antigravity.md"
 )
+
+# プロジェクト AGENTS.md の固有ルール部分の見出し（dev init --force が各節を残すときの目印。旧形式は末尾に「（骨子）」が付く）
+PROJECT_RULES_MARKER="# プロジェクト固有の AI エージェントルール"
 
 GITIGNORE_HEADER="# AI agent files (managed by dev)"
 GITIGNORE_HEADER_LEGACY="# AI agent files (managed by aidev)"
