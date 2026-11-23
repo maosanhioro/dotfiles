@@ -114,6 +114,12 @@ if ! command -v jq >/dev/null 2>&1; then
   apt_install jq
 fi
 
+# shellcheck: dotfiles 自身のシェルスクリプトを編集直後に検査する（.claude/hooks/check-shell.sh）
+if ! command -v shellcheck >/dev/null 2>&1; then
+  echo "shellcheck をインストール中..."
+  apt_install shellcheck
+fi
+
 if ! command -v fd >/dev/null 2>&1 && ! command -v fdfind >/dev/null 2>&1; then
   echo "fd-find をインストール中..."
   apt_install fd-find
