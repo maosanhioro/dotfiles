@@ -111,6 +111,7 @@ delegate スキルが `dev send player` / `dev peek player` で隣のペイン�
 | `~/.codex/AGENTS.md` | `agents/AGENTS.md` | シンボリックリンク |
 | `~/.gemini/GEMINI.md` | `agents/AGENTS.md` | シンボリックリンク |
 | `~/.claude/skills/delegate` | `agents/claude/skills/delegate` | 委譲スキル |
+| `~/.claude/plugins-optional.md` | `agents/claude/plugins-optional.md` | プロジェクトごとに入れる拡張の候補一覧（作業が当てはまると Claude が導入を提案する） |
 | `~/.codex/config.toml` | `agents/codex/config.toml` | **コピー**（project trust 等のローカル状態を保持するため。テンプレート変更は手動反映） |
 | `~/.codex/hooks.json` | `agents/codex/hooks.json` | シンボリックリンク（状態表示の hooks） |
 | `~/.copilot/hooks/dev.json` | `agents/copilot/hooks/dev.json` | シンボリックリンク（同上） |
@@ -256,6 +257,7 @@ dotfiles/
 │   ├── copilot/hooks/dev.json
 │   ├── claude/hooks.json           # ~/.claude/settings.json の hooks の正本
 │   ├── claude/plugins.txt          # user スコープで入れる Claude Code プラグインの一覧
+│   ├── claude/plugins-optional.md  # プロジェクトごとに入れる拡張の候補一覧
 │   ├── claude/skills/delegate/     # Claude Code 委譲スキル
 │   └── templates/       # dev init 用テンプレート
 ├── shell/common.sh      # bash / zsh 共通のエイリアス・関数（二重管理を防ぐ）
@@ -280,7 +282,7 @@ install・uninstall・doctor・README が食い違わないよう、次をまと
 - **ホームに置くファイル**: `scripts/lib.sh` の `LINKS` に1行足す（install がリンクし、uninstall が外し、doctor が確かめる。3スクリプト側は触らない）
 - **新しいコマンドへの依存**: `install.sh` に導入処理、`doctor.sh` に `check_cmd` を足す
 - **リンクではなくコピーやマージで置くもの**（`~/.codex/config.toml`、`~/.claude/settings.json` の一部）: install の個別処理に足す。既にあるマシンには自動で入らないので、補う処理も足す
-- **Claude Code プラグイン**: `agents/claude/plugins.txt` に1行足す
+- **Claude Code プラグイン**: 全環境共通なら `agents/claude/plugins.txt` に1行、プロジェクトごとの候補なら `agents/claude/plugins-optional.md` の表に1行足す
 - **やめたリンクやコマンド**: `LINKS` から `LEGACY_PATHS` へ移す（install が掃除し、doctor が残りを知らせる）
 - **README**: 「グローバル（install が配置）」の表と「ファイル構成」を直す
 - **確かめ方**: `./scripts/install.sh --dry-run` と `dev doctor`。シェル・JSON・TOML は `scripts/lint.sh <file>...` で検査できる（Claude の編集直後は hook が、コミット時は pre-commit が自動で呼ぶ）

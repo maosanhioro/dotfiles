@@ -40,6 +40,7 @@ LINKS=(
   "$HOME/.local/bin/tmux-pane-info|tmux/pane-info.sh"
   "$HOME/.claude/CLAUDE.md|agents/AGENTS.md"
   "$HOME/.claude/skills/delegate|agents/claude/skills/delegate"
+  "$HOME/.claude/plugins-optional.md|agents/claude/plugins-optional.md"
   "$HOME/.codex/AGENTS.md|agents/AGENTS.md"
   "$HOME/.codex/hooks.json|agents/codex/hooks.json"
   "$HOME/.copilot/hooks/dev.json|agents/copilot/hooks/dev.json"
