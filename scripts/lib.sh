@@ -57,6 +57,20 @@ CODEX_CONFIG_TEMPLATE="$REPO_DIR/agents/codex/config.toml"
 CLAUDE_SETTINGS="$HOME/.claude/settings.json"
 CLAUDE_HOOKS_TEMPLATE="$REPO_DIR/agents/claude/hooks.json"
 CLAUDE_PERMISSIONS_TEMPLATE="$REPO_DIR/agents/claude/permissions.json"
+CLAUDE_PLUGINS_LIST="$REPO_DIR/agents/claude/plugins.txt"
+
+# plugins.txt のプラグイン ID を1行ずつ出す（コメントと空行を除く）
+claude_plugin_wanted() {
+  [ -f "$CLAUDE_PLUGINS_LIST" ] || return 0
+  sed -e 's/#.*//' -e 's/[[:space:]]//g' "$CLAUDE_PLUGINS_LIST" | grep -v '^$' || true
+}
+
+# user スコープで導入済みのプラグイン ID を1行ずつ出す。claude / jq が無ければ失敗を返す
+claude_plugin_installed() {
+  command -v claude >/dev/null 2>&1 || return 1
+  command -v jq >/dev/null 2>&1 || return 1
+  claude plugin list --json | jq -r '.[] | select(.scope == "user") | .id'
+}
 
 # tmux-dotbar（install が clone し、doctor が検出し、uninstall が削除する。TPM は使わない）
 DOTBAR_DIR="$HOME/.config/tmux/plugins/tmux-dotbar"

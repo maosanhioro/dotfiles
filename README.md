@@ -116,6 +116,7 @@ delegate スキルが `dev send player` / `dev peek player` で隣のペイン�
 | `~/.copilot/hooks/dev.json` | `agents/copilot/hooks/dev.json` | シンボリックリンク（同上） |
 | `~/.claude/settings.json` の `hooks` | `agents/claude/hooks.json` | **キー単位で置き換え**（他の設定は触らない） |
 | `~/.claude/settings.json` の `permissions.allow` | `agents/claude/permissions.json` | **追記と削除のみ**（`allow` を足し `remove` を消す。手で足したルールは残る） |
+| Claude Code プラグイン（user スコープ） | `agents/claude/plugins.txt` | **未導入のものだけ導入**（`claude plugin install`。一覧から消しても自動では外さず、doctor が警告する） |
 
 正本 `agents/AGENTS.md` を編集すれば 3 ツールに即時反映される。
 
@@ -253,6 +254,7 @@ dotfiles/
 │   ├── codex/config.toml / hooks.json
 │   ├── copilot/hooks/dev.json
 │   ├── claude/hooks.json           # ~/.claude/settings.json の hooks の正本
+│   ├── claude/plugins.txt          # user スコープで入れる Claude Code プラグインの一覧
 │   ├── claude/skills/delegate/     # Claude Code 委譲スキル
 │   └── templates/       # dev init 用テンプレート
 ├── shell/common.sh      # bash / zsh 共通のエイリアス・関数（二重管理を防ぐ）

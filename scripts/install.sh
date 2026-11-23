@@ -428,6 +428,26 @@ else
 fi
 
 ############################################
+# Claude Code プラグイン（一覧: agents/claude/plugins.txt）
+############################################
+# 未導入のものだけ入れる。一覧から消したものを外すのは破壊的なので自動ではやらず、doctor で知らせる。
+# 1件失敗しても他の設定まで止めないよう、警告を出して続ける
+if ! installed_plugins="$(claude_plugin_installed)"; then
+  echo "claude / jq が無いか、プラグイン一覧の取得に失敗したため Claude Code プラグインの導入をスキップ"
+else
+  echo "Claude Code プラグインを確認中..."
+  while IFS= read -r plugin_id; do
+    if grep -qxF "$plugin_id" <<<"$installed_plugins"; then
+      echo "  導入済み: $plugin_id"
+      continue
+    fi
+    echo "  導入: $plugin_id"
+    run claude plugin install "$plugin_id" --scope user ||
+      echo "  [WARN] $plugin_id の導入に失敗しました（手動: claude plugin install $plugin_id --scope user）"
+  done < <(claude_plugin_wanted)
+fi
+
+############################################
 # 旧構成の残骸を掃除（1回限りの移行用）
 ############################################
 for legacy in "${LEGACY_PATHS[@]}"; do

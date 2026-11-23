@@ -144,6 +144,27 @@ if is_wsl; then
   fi
 fi
 
+bold "Claude Code プラグイン（一覧: agents/claude/plugins.txt）"
+if ! installed_plugins="$(claude_plugin_installed)"; then
+  warn "claude / jq が無いか、プラグイン一覧の取得に失敗しました"
+else
+  wanted_plugins="$(claude_plugin_wanted)"
+  while IFS= read -r plugin_id; do
+    [ -n "$plugin_id" ] || continue
+    if grep -qxF "$plugin_id" <<<"$installed_plugins"; then
+      ok "$plugin_id"
+    else
+      warn "$plugin_id が未導入です（./scripts/install.sh で導入されます）"
+    fi
+  done <<<"$wanted_plugins"
+  # 手で入れたもの・一覧から消したもの。同じプラグインを別の marketplace 名で二重に入れた場合もここに出る
+  while IFS= read -r plugin_id; do
+    [ -n "$plugin_id" ] || continue
+    grep -qxF "$plugin_id" <<<"$wanted_plugins" ||
+      warn "$plugin_id は一覧にありません（残すなら plugins.txt へ、不要なら claude plugin uninstall $plugin_id --scope user）"
+  done <<<"$installed_plugins"
+fi
+
 bold "ローカル状態ファイル"
 if [ -L "$CODEX_CONFIG" ]; then
   warn "~/.codex/config.toml はシンボリックリンクです（project trust を保持するため通常ファイル推奨。install で移行されます）"

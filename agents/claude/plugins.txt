@@ -1,0 +1,6 @@
+# Claude Code プラグイン（user スコープ）。1行に1つ name@marketplace
+# install が未導入のものだけ入れる。行を消しても自動では外さない（doctor が警告する）。
+# marketplace は組み込みの anthropic-plugin-directory を使う。新しいマシンでも追加なしで動き、
+# 版はディレクトリ側でコミット固定される（claude-plugins-official を指定すると新環境では見つからない）
+claude-code-setup@anthropic-plugin-directory
+claude-md-management@anthropic-plugin-directory

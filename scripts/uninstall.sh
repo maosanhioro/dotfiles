@@ -50,6 +50,18 @@ if [ -d "$DOTBAR_DIR" ]; then
   echo "削除: $DOTBAR_DIR"
 fi
 
+# 一覧にあるものだけ外す（一覧に無い、手で入れたプラグインは残す）
+if installed_plugins="$(claude_plugin_installed)"; then
+  while IFS= read -r plugin_id; do
+    grep -qxF "$plugin_id" <<<"$installed_plugins" || continue
+    run claude plugin uninstall "$plugin_id" --scope user ||
+      echo "  [WARN] $plugin_id の削除に失敗しました（手動: claude plugin uninstall $plugin_id --scope user）"
+    echo "削除: Claude Code プラグイン $plugin_id"
+  done < <(claude_plugin_wanted)
+else
+  echo "claude / jq が無いか、プラグイン一覧の取得に失敗したため Claude Code プラグインの削除をスキップ"
+fi
+
 echo
 echo "以下のローカル状態ファイルは残しています（不要なら手動で削除してください）:"
 echo "  ~/.codex/config.toml"
