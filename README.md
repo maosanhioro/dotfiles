@@ -248,6 +248,7 @@ dotfiles/
 │   ├── lib.sh           # リンク対応表（install/uninstall/doctor で共有）
 │   ├── install.sh / uninstall.sh / doctor.sh
 │   ├── init.sh / clean.sh          # dev init / dev clean の実体
+│   ├── lint.sh          # シェル（構文 + shellcheck）・JSON・TOML の検査（hook と pre-commit から呼ぶ）
 │   └── wt-settings.py   # WSL で Windows Terminal の設定を足す（install から呼ぶ）
 ├── agents/
 │   ├── AGENTS.md        # グローバル AI 指示の単一正本
@@ -267,8 +268,9 @@ dotfiles/
 ├── git/gitconfig
 ├── nvim/                # LazyVim ベース
 ├── xremap/              # Ubuntu Desktop のキーリマップ（config.yml + ユーザーユニット）
-├── .claude/             # このリポジトリ限定の Claude Code 設定（シェルを編集した直後に検査する hook）
-└── .shellcheckrc        # shellcheck の除外設定（install / hook / 手動実行で共通）
+├── .claude/             # このリポジトリ限定の Claude Code 設定（Claude の編集直後に scripts/lint.sh を呼ぶ hook）
+├── .githooks/pre-commit # コミット時に scripts/lint.sh で検査（Codex / Copilot の編集も拾う。install が有効化）
+└── .shellcheckrc        # shellcheck の除外設定（lint.sh / 手動実行で共通）
 ```
 
 ## 設定を追加・変更するとき
@@ -281,7 +283,7 @@ install・uninstall・doctor・README が食い違わないよう、次をまと
 - **Claude Code プラグイン**: `agents/claude/plugins.txt` に1行足す
 - **やめたリンクやコマンド**: `LINKS` から `LEGACY_PATHS` へ移す（install が掃除し、doctor が残りを知らせる）
 - **README**: 「グローバル（install が配置）」の表と「ファイル構成」を直す
-- **確かめ方**: `./scripts/install.sh --dry-run` と `dev doctor`。シェルを触ったら `shellcheck`（Claude Code の編集は hook が自動で検査する）
+- **確かめ方**: `./scripts/install.sh --dry-run` と `dev doctor`。シェル・JSON・TOML は `scripts/lint.sh <file>...` で検査できる（Claude の編集直後は hook が、コミット時は pre-commit が自動で呼ぶ）
 
 ## リファレンス
 

@@ -114,7 +114,7 @@ if ! command -v jq >/dev/null 2>&1; then
   apt_install jq
 fi
 
-# dotfiles 自身のシェルスクリプトを編集直後に shellcheck で検査する（.claude/hooks/check-shell.sh）
+# dotfiles 自身のシェルスクリプトを scripts/lint.sh が shellcheck で検査する（編集直後とコミット時）
 if ! command -v shellcheck >/dev/null 2>&1; then
   echo "shellcheck をインストール中..."
   apt_install shellcheck
@@ -431,6 +431,15 @@ else
   run mkdir -p "$(dirname "$CLAUDE_SETTINGS")"
   run mv "$claude_settings_tmp" "$CLAUDE_SETTINGS"
   rm -f "$claude_settings_tmp"
+fi
+
+############################################
+# dotfiles 自身の git hooks（.githooks/pre-commit がコミット時に scripts/lint.sh で検査する）
+############################################
+# core.hooksPath はリポジトリごとのローカル設定で clone に含まれないため、install が設定する
+if [ "$(git -C "$REPO_DIR" config --get core.hooksPath || true)" != ".githooks" ]; then
+  echo "dotfiles の git hooks を有効化中（core.hooksPath = .githooks）..."
+  run git -C "$REPO_DIR" config core.hooksPath .githooks
 fi
 
 ############################################

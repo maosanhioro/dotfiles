@@ -90,7 +90,7 @@ check_cmd eza
 check_cmd pipx
 check_cmd node "node (Mason の LSP サーバ実行に必要)"
 check_cmd jq "jq (dev-guard-delegate hook に必要)"
-check_cmd shellcheck "shellcheck (dotfiles の check-shell hook が使う。無ければ構文チェックだけになる)"
+check_cmd shellcheck "shellcheck (dotfiles の scripts/lint.sh が使う。無ければ構文チェックだけになる)"
 check_cmd claude "Claude Code (claude)"
 check_cmd codex "Codex CLI (codex)"
 check_cmd copilot "GitHub Copilot CLI (copilot)"
@@ -143,6 +143,13 @@ if is_wsl; then
   else
     warn "/etc/binfmt.d/WSLInterop.conf がありません（systemd のディストリが起動すると interop が消える。install で作成）"
   fi
+fi
+
+bold "dotfiles の git hooks"
+if [ "$(git -C "$REPO_DIR" config --get core.hooksPath || true)" = ".githooks" ]; then
+  ok "core.hooksPath = .githooks（コミット時に scripts/lint.sh で検査）"
+else
+  warn "core.hooksPath が .githooks ではありません（./scripts/install.sh で設定されます）"
 fi
 
 bold "Claude Code プラグイン（一覧: agents/claude/plugins.txt）"
