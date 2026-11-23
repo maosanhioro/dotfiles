@@ -148,6 +148,28 @@ if is_wsl; then
   else
     warn "/etc/binfmt.d/WSLInterop.conf がありません（systemd のディストリが起動すると interop が消える。install で作成）"
   fi
+
+  bold "キーリマップ（Windows: AutoHotkey）"
+  user_profile="$(win_env USERPROFILE)"
+  app_data="$(win_env APPDATA)"
+  if [ -z "$user_profile" ] || [ -z "$app_data" ]; then
+    warn "Windows の環境変数が取れないため確認できません（WSL interop を確認）"
+  else
+    ahk_dest="$(wslpath -u "$user_profile")/${AHK_DEST_SUBDIR}/$(basename "$AHK_SOURCE")"
+    ahk_shortcut="$(wslpath -u "$app_data")/Microsoft/Windows/Start Menu/Programs/Startup/${AHK_SHORTCUT_NAME}"
+    if [ ! -f "$ahk_dest" ]; then
+      warn "$ahk_dest がありません（./scripts/install.sh でコピーされます）"
+    elif ! cmp -s "$AHK_SOURCE" "$ahk_dest"; then
+      warn "$ahk_dest が dotfiles の版と異なります（install で上書き。Windows 側で直した内容は先に dotfiles へ移す）"
+    else
+      ok "$ahk_dest"
+    fi
+    if [ -f "$ahk_shortcut" ]; then
+      ok "スタートアップ: $AHK_SHORTCUT_NAME"
+    else
+      warn "スタートアップに $AHK_SHORTCUT_NAME がありません（install で作成。AutoHotkey v2 が未導入なら winget install AutoHotkey.AutoHotkey）"
+    fi
+  fi
 fi
 
 bold "dotfiles の git hooks"

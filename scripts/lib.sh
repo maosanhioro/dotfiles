@@ -19,6 +19,14 @@ is_wsl() {
   grep -qi microsoft /proc/version 2>/dev/null
 }
 
+# Windows の環境変数（LOCALAPPDATA など）を Windows 形式のパスで返す。取れなければ空。
+# cmd.exe は作業ディレクトリが Linux 側だと警告を出すため /mnt/c から呼ぶ
+win_env() {
+  local win_cmd="/mnt/c/Windows/System32/cmd.exe"
+  [ -x "$win_cmd" ] || return 0
+  (cd /mnt/c && "$win_cmd" /c "echo %$1%" 2>/dev/null | tr -d '\r')
+}
+
 version_at_least() {
   # $1=現在 $2=要求。sort -V の最小値が要求と一致すれば満たしている
   [ "$(printf '%s\n%s\n' "$2" "$1" | sort -V | head -n1)" = "$2" ]
@@ -74,6 +82,13 @@ claude_plugin_installed() {
   command -v jq >/dev/null 2>&1 || return 1
   claude plugin list --json | jq -r '.[] | select(.scope == "user") | .id'
 }
+
+# AutoHotkey（WSL のみ）。Windows のログイン時に WSL が起動しているとは限らないため、
+# リンクではなく Windows 側へコピーし、スタートアップのショートカットからそのコピーを起動する
+AHK_SOURCE="$REPO_DIR/windows/autohotkey/EmacsStyle.ahk"
+AHK_DEST_SUBDIR=".config/autohotkey"         # %USERPROFILE% からの相対
+AHK_SHORTCUT_NAME="EmacsStyle.ahk.lnk"       # スタートアップフォルダ内の名前
+AHK_SETUP_PS1="$REPO_DIR/windows/autohotkey/setup-startup.ps1"
 
 # tmux-dotbar（install が clone し、doctor が検出し、uninstall が削除する。TPM は使わない）
 DOTBAR_DIR="$HOME/.config/tmux/plugins/tmux-dotbar"

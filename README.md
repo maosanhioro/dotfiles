@@ -249,6 +249,28 @@ install がリンクする。xremap 本体まわりは手動で入れる（cargo
 `application:` 行で確認できる。OS アップグレードでアプリ名が変わると除外が外れる
 （Ubuntu 26.04 で `gnome-terminal-server` → `org.gnome.Terminal` になった）。
 
+### キーリマップ（Windows: AutoHotkey、WSL では install が自動で設定）
+
+xremap と同じ Emacs 風のキー操作を Windows 全体に効かせる。Windows Terminal は除外している
+（端末の中は tmux・シェル側のキーに任せる）。スクリプトの正本は `windows/autohotkey/EmacsStyle.ahk`。
+
+WSL で `./scripts/install.sh` を実行すると、次を自動で行う。
+
+- スクリプトを `%USERPROFILE%\.config\autohotkey\EmacsStyle.ahk` にコピーする
+  （リンクにしないのは、Windows へのログイン時に WSL が起動しておらず読めないことがあるため）
+- スタートアップフォルダ（`%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`）に
+  `EmacsStyle.ahk.lnk` を作る。同じ名前のスクリプトを起動する古いショートカットは削除する
+- スクリプトが変わっていれば、動いている AutoHotkey を止めて起動し直す
+
+手作業が要るのは AutoHotkey v2 本体の導入だけ（未導入なら install がその旨を表示する）。
+
+```powershell
+winget install AutoHotkey.AutoHotkey
+```
+
+入れたら WSL で install を再実行する。**スクリプトを直すときは dotfiles 側を編集して install を実行する**。
+Windows 側のコピーを直接直しても、次の install で上書きされる（`dev doctor` が差分を警告する）。
+
 ## ファイル構成
 
 ```
@@ -279,6 +301,7 @@ dotfiles/
 ├── git/gitconfig
 ├── nvim/                # LazyVim ベース
 ├── xremap/              # Ubuntu Desktop のキーリマップ（config.yml + ユーザーユニット）
+├── windows/autohotkey/  # Windows のキーリマップ（EmacsStyle.ahk + スタートアップ登録用 ps1）
 ├── .claude/             # このリポジトリ限定の Claude Code 設定（Claude の編集直後に scripts/lint.sh を呼ぶ hook）
 ├── .githooks/pre-commit # コミット時に scripts/lint.sh で検査（Codex / Copilot の編集も拾う。install が有効化）
 └── .shellcheckrc        # shellcheck の除外設定（lint.sh / 手動実行で共通）

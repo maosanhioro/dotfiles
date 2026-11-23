@@ -1,0 +1,2 @@
+# AutoHotkey のスクリプトは Windows 側へそのままコピーするため、BOM と CRLF を変換させない
+windows/autohotkey/*.ahk -text

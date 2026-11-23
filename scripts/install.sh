@@ -387,16 +387,55 @@ if is_wsl && [ "$NO_SUDO" -eq 0 ]; then
 fi
 
 ############################################
+# AutoHotkey（WSL のみ。スクリプトを Windows 側へコピーし、スタートアップから起動）
+############################################
+# 正本は windows/autohotkey/EmacsStyle.ahk。Windows 側のコピーを直接直しても次の install で上書きされる
+if is_wsl; then
+  user_profile="$(win_env USERPROFILE)"
+  if [ -z "$user_profile" ]; then
+    echo "Windows の USERPROFILE が取れないため AutoHotkey の設定をスキップ（cmd.exe が起動できない。WSL interop を確認）"
+  else
+    ahk_dest="$(wslpath -u "$user_profile")/${AHK_DEST_SUBDIR}/$(basename "$AHK_SOURCE")"
+    ahk_changed=0
+    if ! cmp -s "$AHK_SOURCE" "$ahk_dest"; then
+      ahk_changed=1
+      echo "AutoHotkey スクリプトをコピー: $(wslpath -w "$(dirname "$ahk_dest")" 2>/dev/null || dirname "$ahk_dest")"
+      run mkdir -p "$(dirname "$ahk_dest")"
+      run cp "$AHK_SOURCE" "$ahk_dest"
+    fi
+    if [ "$DRY_RUN" -eq 1 ]; then
+      echo "[dry-run] スタートアップのショートカットの確認と AutoHotkey の再起動"
+    else
+      ahk_args=(-Script "$(wslpath -w "$ahk_dest")" -ShortcutName "$AHK_SHORTCUT_NAME")
+      if [ "$ahk_changed" -eq 1 ]; then
+        ahk_args+=(-Changed)
+      fi
+      # powershell.exe も作業ディレクトリが Linux 側だと警告を出すため /mnt/c から呼ぶ
+      if ! ahk_result="$(cd /mnt/c && /mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe \
+        -NoProfile -ExecutionPolicy Bypass -File "$(wslpath -w "$AHK_SETUP_PS1")" "${ahk_args[@]}" 2>&1)"; then
+        echo "  AutoHotkey のスタートアップ設定に失敗しました（PowerShell の出力を以下に表示）"
+      fi
+      ahk_result="${ahk_result//$'\r'/}"
+      while IFS= read -r ahk_token; do
+        case "$ahk_token" in
+          no-autohotkey) echo "  AutoHotkey v2 が入っていないため自動起動は設定しません（winget install AutoHotkey.AutoHotkey の後に install を再実行）" ;;
+          old-shortcut-removed) echo "  同じスクリプトを起動する古いスタートアップのショートカットを削除" ;;
+          shortcut-created) echo "  スタートアップにショートカットを作成: $AHK_SHORTCUT_NAME" ;;
+          restarted) echo "  AutoHotkey スクリプトを起動し直しました" ;;
+          "") ;;
+          *) echo "  $ahk_token" ;;
+        esac
+      done <<<"$ahk_result"
+    fi
+  fi
+fi
+
+############################################
 # Windows Terminal の設定（WSL のみ。Windows 側のファイルを /mnt/c 経由で編集）
 ############################################
 # タブ名をセッション名にする設定と Shift+Enter の改行。中身は scripts/wt-settings.py
 if is_wsl; then
-  win_cmd="/mnt/c/Windows/System32/cmd.exe"
-  local_appdata=""
-  if [ -x "$win_cmd" ]; then
-    # cmd.exe は WSL の作業ディレクトリが Linux 側だと警告を出すため /mnt/c から呼ぶ
-    local_appdata="$(cd /mnt/c && "$win_cmd" /c 'echo %LOCALAPPDATA%' 2>/dev/null | tr -d '\r')"
-  fi
+  local_appdata="$(win_env LOCALAPPDATA)"
   if [ -z "$local_appdata" ]; then
     echo "Windows の LOCALAPPDATA が取れないため Windows Terminal の設定をスキップ（cmd.exe が起動できない。WSL interop を確認）"
   else
