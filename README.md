@@ -266,8 +266,22 @@ dotfiles/
 │   └── pick.sh          # prefix + y / u の実体（画面の行・URL を fzf で拾う。試用中）
 ├── git/gitconfig
 ├── nvim/                # LazyVim ベース
-└── xremap/              # Ubuntu Desktop のキーリマップ（config.yml + ユーザーユニット）
+├── xremap/              # Ubuntu Desktop のキーリマップ（config.yml + ユーザーユニット）
+├── .claude/             # このリポジトリ限定の Claude Code 設定（シェルを編集した直後に検査する hook）
+└── .shellcheckrc        # shellcheck の除外設定（install / hook / 手動実行で共通）
 ```
+
+## 設定を追加・変更するとき
+
+install・uninstall・doctor・README が食い違わないよう、次をまとめて揃える。
+
+- **ホームに置くファイル**: `scripts/lib.sh` の `LINKS` に1行足す（install がリンクし、uninstall が外し、doctor が確かめる。3スクリプト側は触らない）
+- **新しいコマンドへの依存**: `install.sh` に導入処理、`doctor.sh` に `check_cmd` を足す
+- **リンクではなくコピーやマージで置くもの**（`~/.codex/config.toml`、`~/.claude/settings.json` の一部）: install の個別処理に足す。既にあるマシンには自動で入らないので、補う処理も足す
+- **Claude Code プラグイン**: `agents/claude/plugins.txt` に1行足す
+- **やめたリンクやコマンド**: `LINKS` から `LEGACY_PATHS` へ移す（install が掃除し、doctor が残りを知らせる）
+- **README**: 「グローバル（install が配置）」の表と「ファイル構成」を直す
+- **確かめ方**: `./scripts/install.sh --dry-run` と `dev doctor`。シェルを触ったら `shellcheck`（Claude Code の編集は hook が自動で検査する）
 
 ## リファレンス
 
